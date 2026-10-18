@@ -1,0 +1,92 @@
+[
+  {
+    "id": "PK-101",
+    "ownerName": "Gowda",
+    "ownerPhone": "env:OWNER_PHONE_1",
+    "ownerLanguage": "kn",
+    "bhk": 2,
+    "area": "Brookefield",
+    "landmark": "near ITPL main road",
+    "rent": 23000,
+    "deposit": 100000,
+    "furnishing": "semi-furnished",
+    "tenantPreference": "family",
+    "houseRules": "No smoking inside",
+    "pets": "unknown",
+    "parking": "one car",
+    "availableFrom": "Immediately",
+    "visitSlots": [
+      "Saturday 11 AM"
+    ],
+    "lastConfirmedDaysAgo": 1,
+    "lat": 12.969,
+    "lng": 77.7212
+  },
+  {
+    "id": "PK-102",
+    "ownerName": "Sharma",
+    "ownerPhone": "env:OWNER_PHONE_2",
+    "ownerLanguage": "hi",
+    "bhk": 2,
+    "area": "Hoodi",
+    "landmark": "5 minutes from Hoodi metro",
+    "rent": 24000,
+    "deposit": 120000,
+    "furnishing": "fully furnished",
+    "tenantPreference": "any",
+    "houseRules": "",
+    "pets": "unknown",
+    "parking": "bike only",
+    "availableFrom": "1 November",
+    "visitSlots": [],
+    "lastConfirmedDaysAgo": 6,
+    "lat": 12.9918,
+    "lng": 77.7161
+  },
+  {
+    "id": "PK-103",
+    "ownerName": "Reddy",
+    "ownerPhone": "env:OWNER_PHONE_1",
+    "ownerLanguage": "kn",
+    "bhk": 1,
+    "area": "Kundalahalli",
+    "landmark": "behind Kundalahalli gate signal",
+    "rent": 15000,
+    "deposit": 60000,
+    "furnishing": "unfurnished",
+    "tenantPreference": "bachelors",
+    "houseRules": "Vegetarian cooking only",
+    "pets": "no",
+    "parking": "bike only",
+    "availableFrom": "Immediately",
+    "visitSlots": [
+      "Sunday evening"
+    ],
+    "lastConfirmedDaysAgo": 4,
+    "lat": 12.9605,
+    "lng": 77.7128
+  },
+  {
+    "id": "PK-104",
+    "ownerName": "Nair",
+    "ownerPhone": "env:OWNER_PHONE_2",
+    "ownerLanguage": "en",
+    "bhk": 3,
+    "area": "Marathahalli",
+    "landmark": "off Outer Ring Road, near Innovative Multiplex",
+    "rent": 38000,
+    "deposit": 200000,
+    "furnishing": "semi-furnished",
+    "tenantPreference": "family",
+    "houseRules": "",
+    "pets": "yes",
+    "parking": "two cars",
+    "availableFrom": "15 November",
+    "visitSlots": [
+      "Weekdays after 7 PM"
+    ],
+    "lastConfirmedDaysAgo": 0,
+    "lat": 12.9553,
+    "lng": 77.7001
+  }
+]

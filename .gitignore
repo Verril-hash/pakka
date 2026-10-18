@@ -1,0 +1,26 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*service-account*.json
+*firebase-adminsdk*.json
+*.session
+
+# Local data: owner/tenant phone numbers, call results, transcripts
+data/db.json
+
+# Dependencies and builds
+node_modules/
+web/node_modules/
+web/dist/
+
+# Logs, OS and editor files
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/

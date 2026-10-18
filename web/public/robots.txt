@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /console
+Disallow: /owner
+Disallow: /me
+Allow: /

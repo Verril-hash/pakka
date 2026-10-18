@@ -1,0 +1,20 @@
+{
+  "name": "pakka",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pakka \u2014 voice agents that keep Bengaluru rental listings honest",
+  "scripts": {
+    "start": "node --env-file=.env server/index.mjs",
+    "db:reset": "node -e \"require('fs').rmSync('data/db.json',{force:true})\"",
+    "tenant:call": "node --env-file=.env scripts/tenant-call.mjs",
+    "agent:sync": "node --env-file=.env scripts/sync-agent.mjs",
+    "extractions:sync": "node --env-file=.env scripts/sync-extractions.mjs",
+    "call:test": "node --env-file=.env scripts/test-call.mjs",
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
