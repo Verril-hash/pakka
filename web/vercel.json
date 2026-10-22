@@ -1,3 +1,6 @@
 {
-  "rewrites": [{ "source": "/((?!assets/|images/|favicon.svg|robots.txt).*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://pakka-785936219462.asia-south1.run.app/api/:path*" },
+    { "source": "/((?!assets/|images/|demo/|favicon.svg|robots.txt).*)", "destination": "/index.html" }
+  ]
 }

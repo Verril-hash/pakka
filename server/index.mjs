@@ -103,6 +103,15 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   if (req.method === 'GET' && url.pathname === '/health') return send(res, 200, { ok: true });
+
+  // Bolna posts here when a call changes status. We don't trust the body: it just wakes the loop,
+  // which re-reads the call from Bolna's API. On Cloud Run this also wakes a sleeping instance.
+  if (req.method === 'POST' && url.pathname === '/webhooks/bolna') {
+    if (!TOKEN || url.searchParams.get('token') !== TOKEN) return send(res, 401, { error: 'unauthorized' });
+    req.resume();
+    tick();
+    return send(res, 200, { ok: true });
+  }
   // Live snapshot for the console. Contains tenant phones: team only.
   if (req.method === 'GET' && url.pathname === '/state') {
     if (currentUser(req)?.role !== 'team') return send(res, 401, { error: 'Team sign-in required.' });

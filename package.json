@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Pakka \u2014 voice agents that keep Bengaluru rental listings honest",
+  "description": "Pakka — voice agents that keep Bengaluru rental listings honest",
   "scripts": {
     "start": "node --env-file=.env server/index.mjs",
     "db:reset": "node -e \"require('fs').rmSync('data/db.json',{force:true})\"",
@@ -13,7 +13,8 @@
     "call:test": "node --env-file=.env scripts/test-call.mjs",
     "web:dev": "npm --prefix web run dev",
     "web:build": "npm --prefix web run build",
-    "inbound:link": "node --env-file=.env scripts/link-inbound.mjs"
+    "inbound:link": "node --env-file=.env scripts/link-inbound.mjs",
+    "deploy": "gcloud run deploy pakka --source . --region asia-south1 --project pakka-552af --account verrilvaz404@gmail.com --quiet"
   },
   "engines": {
     "node": ">=22"

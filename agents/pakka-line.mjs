@@ -181,6 +181,8 @@ export const agentConfig = {
   agent_name: agentName,
   // Incoming calls send no variables ({greeting} renders empty), so the fixed part must stand on its own.
   agent_welcome_message: "Hi, this is Pakka, your AI rental assistant. {greeting}",
+  // Bolna pings the server when a call changes status, so results land at once (and Cloud Run wakes up).
+  webhook_url: process.env.PUBLIC_URL && process.env.PAKKA_TOOL_TOKEN ? `${process.env.PUBLIC_URL}/webhooks/bolna?token=${process.env.PAKKA_TOOL_TOKEN}` : null,
   tasks: [
     {
       task_type: 'conversation',

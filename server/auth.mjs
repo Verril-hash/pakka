@@ -4,7 +4,7 @@
 // We verify it with Firebase Admin, require a verified phone number (Pakka works by calling people,
 // and owners are matched to their flats by number), then issue our own httpOnly session cookie.
 
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { verifyIdToken } from './firebase.mjs';
 import { db, save, logEvent } from './store.mjs';
 import { normalizePhone } from './util.mjs';
@@ -13,7 +13,22 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const COOKIE = 'pakka_session';
 const ROLES = ['tenant', 'owner', 'team'];
 
-const sessions = new Map(); // token → { uid, role, phone, exp }
+// Sessions are kept in the store (so they survive Cloud Run restarts), keyed by a hash of the token:
+// the database never holds a usable cookie value.
+const hashToken = (token) => createHash('sha256').update(token).digest('hex');
+const sessions = {
+  get: (token) => db.authSessions[hashToken(token)],
+  set(token, session) {
+    const now = Date.now();
+    for (const [k, s] of Object.entries(db.authSessions)) if (s.exp < now) delete db.authSessions[k];
+    db.authSessions[hashToken(token)] = session;
+    save();
+  },
+  delete(token) {
+    delete db.authSessions[hashToken(token)];
+    save();
+  },
+};
 
 export const isOwner = (phone) => db.listings.some((l) => l.ownerPhone === phone);
 

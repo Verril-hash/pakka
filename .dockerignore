@@ -1,0 +1,22 @@
+# Kept in sync with .gcloudignore: secrets and local data never go into the image.
+.git
+.gitignore
+.gcloudignore
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*service-account*.json
+*firebase-adminsdk*.json
+*.session
+data/db.json
+node_modules/
+web/node_modules/
+web/dist/
+brand/
+scripts/
+*.log
+.vscode/
+.idea/
+.claude/

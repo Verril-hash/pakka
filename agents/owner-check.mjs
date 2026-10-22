@@ -122,7 +122,8 @@ export const agentName = 'Pakka Check';
 export const agentConfig = {
   agent_name: agentName,
   agent_welcome_message: '{greeting}',
-  webhook_url: process.env.PAKKA_WEBHOOK_URL || null,
+  // Bolna pings the server when a call changes status, so results land at once (and Cloud Run wakes up).
+  webhook_url: process.env.PUBLIC_URL && process.env.PAKKA_TOOL_TOKEN ? `${process.env.PUBLIC_URL}/webhooks/bolna?token=${process.env.PAKKA_TOOL_TOKEN}` : null,
   tasks: [
     {
       task_type: 'conversation',

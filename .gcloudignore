@@ -1,0 +1,22 @@
+# What `gcloud run deploy --source .` uploads to Cloud Build. Secrets and local data never leave this machine.
+.git
+.gitignore
+.gcloudignore
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*service-account*.json
+*firebase-adminsdk*.json
+*.session
+data/db.json
+node_modules/
+web/node_modules/
+web/dist/
+brand/
+scripts/
+*.log
+.vscode/
+.idea/
+.claude/
