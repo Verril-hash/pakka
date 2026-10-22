@@ -8,6 +8,7 @@ import { extname } from 'node:path';
 import { handleApi } from './api.mjs';
 import { handlePortal, PORTAL_PATHS } from './portal.mjs';
 import { currentUser } from './auth.mjs';
+import { appCheckOk, rateLimited } from './guard.mjs';
 import { db, save, logEvent, findListing, resetDb } from './store.mjs';
 import { searchListings } from './listings.mjs';
 import { requestOwnerCheck, tick } from './checks.mjs';
@@ -112,6 +113,16 @@ const server = createServer(async (req, res) => {
     tick();
     return send(res, 200, { ok: true });
   }
+  // Browser API front door: per-IP rate limits, then App Check (only our real website gets in).
+  if (url.pathname.startsWith('/api/')) {
+    const wait = rateLimited(req, url.pathname);
+    if (wait) {
+      res.setHeader('Retry-After', String(wait));
+      return send(res, 429, { error: 'Too many requests. Please wait a moment and try again.' });
+    }
+    if (!(await appCheckOk(req, url.pathname))) return send(res, 401, { error: 'Please use the Pakka website or app.' });
+  }
+
   // Live snapshot for the console. Contains tenant phones: team only.
   if (req.method === 'GET' && url.pathname === '/state') {
     if (currentUser(req)?.role !== 'team') return send(res, 401, { error: 'Team sign-in required.' });

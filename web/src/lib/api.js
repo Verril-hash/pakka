@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+// Everything except public listings and "who am I" needs an App Check token. Firebase loads only for these,
+// so signed-out visitors on the public site never download it.
+const needsAppCheck = (path) => path.startsWith('/api/') && !path.startsWith('/api/public/') && path !== '/api/me';
+
 export async function api(path, options = {}) {
+  const appCheck = needsAppCheck(path) ? await (await import('./firebase')).appCheckToken() : null;
   const res = await fetch(path, {
     ...options,
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers: { 'Content-Type': 'application/json', ...(appCheck ? { 'X-Firebase-AppCheck': appCheck } : {}), ...options.headers },
     body: options.body && typeof options.body !== 'string' ? JSON.stringify(options.body) : options.body,
   });
   const data = await res.json().catch(() => ({}));
