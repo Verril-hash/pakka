@@ -55,7 +55,9 @@ export default function SignIn({ team = false }) {
     }).catch(() => {});
   }, [role]);
 
-  useEffect(() => () => verifier.current?.clear?.(), []);
+  // clear() can throw once the reCAPTCHA element is gone. Thrown during the unmount after phone sign-in,
+  // it took the whole app down: a blank /me until a reload.
+  useEffect(() => () => { try { verifier.current?.clear?.(); } catch { /* already gone */ } }, []);
 
   function recaptcha() {
     if (!verifier.current) verifier.current = new RecaptchaVerifier(auth, 'recaptcha', { size: 'invisible' });

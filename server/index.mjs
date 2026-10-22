@@ -21,17 +21,33 @@ const LOOP_MS = 4000;
 const DIST = new URL('../web/dist/', import.meta.url);
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.json': 'application/json',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.json': 'application/json', '.mp3': 'audio/mpeg',
 };
 
-async function serveWeb(res, pathname) {
+async function serveWeb(req, res, pathname) {
   const file = new URL(`.${decodeURIComponent(pathname)}`, DIST);
   const isAsset = pathname !== '/' && extname(pathname) && file.href.startsWith(DIST.href) && (await stat(file).catch(() => null))?.isFile();
   const target = isAsset ? file : new URL('index.html', DIST);
   const body = await readFile(target).catch(() => null);
   if (!body) return false;
+  const type = TYPES[extname(target.pathname)] ?? 'application/octet-stream';
+  // Audio needs byte ranges, or browsers can't seek in the demo call recording.
+  const range = isAsset && type.startsWith('audio/') && /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
+  if (range) {
+    const start = range[1] ? Number(range[1]) : Math.max(0, body.length - Number(range[2]));
+    const end = range[1] && range[2] ? Math.min(Number(range[2]), body.length - 1) : body.length - 1;
+    if (start > end || start >= body.length) {
+      res.writeHead(416, { 'Content-Range': `bytes */${body.length}` });
+      res.end();
+      return true;
+    }
+    res.writeHead(206, { 'Content-Type': type, 'Content-Range': `bytes ${start}-${end}/${body.length}`, 'Accept-Ranges': 'bytes', 'Content-Length': end - start + 1, 'Cache-Control': 'no-store' });
+    res.end(body.subarray(start, end + 1));
+    return true;
+  }
   res.writeHead(200, {
-    'Content-Type': TYPES[extname(target.pathname)] ?? 'application/octet-stream',
+    'Content-Type': type,
+    ...(type.startsWith('audio/') ? { 'Accept-Ranges': 'bytes' } : {}),
     'Cache-Control': isAsset && pathname.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-store',
   });
   res.end(body);
@@ -135,7 +151,7 @@ const server = createServer(async (req, res) => {
     }
   }
 
-  if (req.method === 'GET' && !url.pathname.startsWith('/tools/') && (await serveWeb(res, url.pathname))) return;
+  if (req.method === 'GET' && !url.pathname.startsWith('/tools/') && (await serveWeb(req, res, url.pathname))) return;
   send(res, 404, { error: 'not found' });
 });
 

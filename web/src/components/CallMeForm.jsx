@@ -1,23 +1,53 @@
-import { Check, PhoneCall } from 'lucide-react';
-import { useState } from 'react';
+import { Check, Lock, PhoneCall } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { api } from '../lib/api';
 
 const LANGS = [['en', 'English'], ['hi', 'हिंदी'], ['kn', 'ಕನ್ನಡ'], ['ta', 'தமிழ்']];
 
-/** "Get a call from Pakka": starts a real Pakka Line call to the visitor. */
+const spaced = (p) => (p ? `${p.slice(0, 3)} ${p.slice(3, 8)} ${p.slice(8)}` : '');
+
+/**
+ * "Get a call from Pakka". Signed-in tenants only: the server calls the verified phone on their account,
+ * whatever the browser sends, so Pakka never rings anyone who didn't sign up for it.
+ */
 export default function CallMeForm() {
-  const [f, setF] = useState({ name: '', phone: '', language: 'en', consent: false });
+  const { pathname } = useLocation();
+  const [me, setMe] = useState(undefined); // undefined = loading
+  const [language, setLanguage] = useState('en');
   const [state, setState] = useState({ status: 'idle' });
 
-  async function submit(e) {
-    e.preventDefault();
+  useEffect(() => {
+    api('/api/me')
+      .then((m) => { setMe(m); if (m.profile?.language) setLanguage(m.profile.language); })
+      .catch(() => setMe({ role: null }));
+  }, []);
+
+  async function call() {
     setState({ status: 'sending' });
     try {
-      await api('/api/public/callback', { method: 'POST', body: f });
+      await api('/api/tenant/call-me', { method: 'POST', body: { language } });
       setState({ status: 'done' });
     } catch (err) {
       setState({ status: 'error', message: err.message });
     }
+  }
+
+  if (me === undefined) return <div className="h-[260px] animate-pulse rounded-[28px] bg-white shadow-card" />;
+
+  if (me.role !== 'tenant' || me.needsProfile) {
+    return (
+      <div className="rounded-[28px] bg-white p-7 shadow-card md:p-8">
+        <span className="grid h-12 w-12 place-items-center rounded-full bg-brand-600/10 text-brand-700"><PhoneCall size={22} /></span>
+        <p className="mt-4 text-[22px] font-semibold tracking-display">Pakka calls you.</p>
+        <p className="mt-2 text-[16px] leading-relaxed text-ink-500">
+          Sign in with your phone number and Pakka calls you on it within seconds. Tell her the area, BHK and budget, in English, हिंदी, ಕನ್ನಡ or தமிழ்.
+        </p>
+        <Link to={`/signin?as=tenant&next=${encodeURIComponent(`${pathname}#call`)}`} className="btn-primary mt-6 h-12 w-full text-[17px]">
+          <Lock size={16} /> {me.role === 'tenant' ? 'Finish your profile' : 'Sign in to get a call'}
+        </Link>
+      </div>
+    );
   }
 
   if (state.status === 'done') {
@@ -31,28 +61,22 @@ export default function CallMeForm() {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-[28px] bg-white p-7 shadow-card md:p-8">
-      <div className="space-y-3">
-        <input className="input h-12 text-[17px]" placeholder="Your name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required />
-        <input className="input tnum h-12 text-[17px]" placeholder="Mobile number" inputMode="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} required />
-      </div>
+    <div className="rounded-[28px] bg-white p-7 shadow-card md:p-8">
+      <p className="text-[13px] text-ink-500">Pakka will call</p>
+      <p className="tnum mt-0.5 text-[22px] font-semibold tracking-display">{spaced(me.phone)}</p>
       <p className="mb-2 mt-5 text-[13px] text-ink-500">She'll speak</p>
       <div className="grid grid-cols-4 gap-1 rounded-full bg-black/[.05] p-1">
         {LANGS.map(([code, label]) => (
-          <button type="button" key={code} onClick={() => setF({ ...f, language: code })}
-            className={`rounded-full py-1.5 text-[14px] transition-all ${f.language === code ? 'bg-white font-semibold text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-900'}`}>
+          <button type="button" key={code} onClick={() => setLanguage(code)}
+            className={`rounded-full py-1.5 text-[14px] transition-all ${language === code ? 'bg-white font-semibold text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-900'}`}>
             {label}
           </button>
         ))}
       </div>
-      <label className="mt-5 flex cursor-pointer items-start gap-2.5 text-[13px] leading-snug text-ink-500">
-        <input type="checkbox" className="mt-0.5 h-4 w-4 accent-brand-600" checked={f.consent} onChange={(e) => setF({ ...f, consent: e.target.checked })} />
-        I agree to receive a call from Pakka's AI assistant on this number.
-      </label>
       {state.status === 'error' && <p className="mt-3 text-[14px] text-[#e5484d]">{state.message}</p>}
-      <button className="btn-primary mt-6 h-12 w-full text-[17px]" disabled={state.status === 'sending' || !f.consent}>
+      <button onClick={call} className="btn-primary mt-6 h-12 w-full text-[17px]" disabled={state.status === 'sending'}>
         <PhoneCall size={17} /> {state.status === 'sending' ? 'Connecting…' : 'Call me now'}
       </button>
-    </form>
+    </div>
   );
 }

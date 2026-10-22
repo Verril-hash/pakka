@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import ErrorBoundary from './components/ErrorBoundary';
 import Flats from './pages/site/Flats';
 import Home from './pages/site/Home';
 import SiteLayout from './pages/site/SiteLayout';
@@ -27,6 +28,7 @@ const SettingsPage = lazy(() => import('./pages/console/Settings'));
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <Suspense fallback={<div className="min-h-screen bg-canvas" />}>
       <Routes>
         <Route element={<SiteLayout />}>
@@ -55,5 +57,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
+    </ErrorBoundary>
   );
 }

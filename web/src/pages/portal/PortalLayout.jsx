@@ -31,7 +31,14 @@ export default function PortalLayout() {
       <header className="glass sticky top-0 z-40 border-b border-black/[.06]">
         <div className="mx-auto flex h-14 max-w-[980px] items-center gap-3 px-5">
           <Link to="/"><Wordmark size="sm" /></Link>
-          <span className="rounded-full bg-black/[.05] px-2.5 py-1 text-[12px] font-medium text-ink-700">{want === 'owner' ? 'Owner' : 'Tenant'}</span>
+          {want === 'owner' ? (
+            <span className="rounded-full bg-black/[.05] px-2.5 py-1 text-[12px] font-medium text-ink-700">Owner</span>
+          ) : (
+            <nav className="flex gap-1 text-[14px]">
+              <Link to="/me" className="rounded-full bg-black/[.06] px-3 py-1 font-medium text-ink-900">My Pakka</Link>
+              <Link to="/flats" className="rounded-full px-3 py-1 text-ink-500 transition-colors hover:text-ink-900">Flats</Link>
+            </nav>
+          )}
           {me && <span className="tnum ml-auto hidden text-[13px] text-ink-400 sm:block">{me.phone.replace('+91', '+91 ')}</span>}
           <button onClick={signOut} className={`btn-ghost h-8 px-3 text-[13px] ${me ? 'sm:ml-0' : ''} ml-auto sm:ml-2`}><LogOut size={15} /> Sign out</button>
         </div>

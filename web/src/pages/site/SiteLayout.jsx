@@ -2,6 +2,10 @@ import { Menu, X } from 'lucide-react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Wordmark } from '../../components/Logo';
+import { api } from '../../lib/api';
+
+// Signed-in customers get a link to their account instead of 'Sign in'. Team accounts never get a console link here.
+const ACCOUNT = { tenant: ['/me', 'My Pakka'], owner: ['/owner', 'My flats'] };
 
 const NAV = [
   ['/flats', 'Flats'],
@@ -13,6 +17,10 @@ const NAV = [
 export default function SiteLayout() {
   const { pathname, hash } = useLocation();
   const [menu, setMenu] = useState(false);
+  const [account, setAccount] = useState(['/signin', 'Sign in']);
+  useEffect(() => {
+    api('/api/me').then((m) => setAccount(ACCOUNT[m.role] && !m.needsProfile ? ACCOUNT[m.role] : ['/signin', 'Sign in'])).catch(() => {});
+  }, [pathname]);
   useEffect(() => {
     setMenu(false);
     if (hash) document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth' });
@@ -30,7 +38,7 @@ export default function SiteLayout() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-4 md:ml-0">
-            <Link to="/signin" className="hidden text-[12px] text-ink-700 hover:text-ink-900 sm:block">Sign in</Link>
+            <Link to={account[0]} className="hidden text-[12px] text-ink-700 hover:text-ink-900 sm:block">{account[1]}</Link>
             <Link to="/flats" className="btn-primary h-7 px-3.5 text-[12px]">Find a flat</Link>
             <button
               onClick={() => setMenu(!menu)}
@@ -45,7 +53,7 @@ export default function SiteLayout() {
         {/* Phone menu */}
         {menu && (
           <nav className="border-t border-black/[.06] px-5 pb-6 pt-2 md:hidden">
-            {[...NAV, ['/signin', 'Sign in']].map(([to, label]) => (
+            {[...NAV, account].map(([to, label]) => (
               <Link key={to} to={to} onClick={() => setMenu(false)} className="block border-b border-black/[.06] py-3.5 text-[17px] font-semibold tracking-tight text-ink-900">
                 {label}
               </Link>

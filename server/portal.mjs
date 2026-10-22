@@ -2,7 +2,7 @@
 // No agent names, models, costs, other people's numbers, or anything from the team console.
 
 import { bolna } from '../lib/bolna.mjs';
-import { listCalls, publicListings } from './api.mjs';
+import { listCalls, publicListings, requestCallback } from './api.mjs';
 import { requestOwnerCheck } from './checks.mjs';
 import { randomUUID } from 'node:crypto';
 import { currentUser, endSession, findUser, profileComplete, saveProfile, sessionCookie, signInWithFirebase } from './auth.mjs';
@@ -91,12 +91,16 @@ function checkView(c) {
   };
 }
 
-async function tenantOverview(phone) {
+async function tenantOverview(user) {
+  const { phone } = user;
+  const profile = findUser(user.uid)?.profiles?.tenant ?? {};
   const requests = db.sessions.filter((s) => s.kind !== 'recheck' && s.tenantPhone === phone).reverse();
   const visits = db.visits.filter((v) => v.tenantPhone === phone).reverse();
   const calls = (await listCalls()).filter((c) => c.agent === 'line' && normalizePhone(c.to) === phone);
   return {
-    name: firstName(requests[0]?.tenantName ?? visits[0]?.tenantName ?? calls[0]?.counterpart ?? ''),
+    name: firstName(profile.fullName ?? requests[0]?.tenantName ?? visits[0]?.tenantName ?? calls[0]?.counterpart ?? ''),
+    // What they told us at sign-up, used to pick "Flats for you".
+    search: { budget: profile.budget ?? null, moveIn: profile.moveIn || null, household: profile.household ?? null, language: profile.language ?? 'en' },
     requests: requests.map((s) => ({
       id: s.id, at: s.createdAt, lookingFor: s.requirement, question: s.question,
       status: s.state === 'done' ? 'done' : s.state === 'calling_back' ? 'calling_you' : 'checking',
@@ -213,7 +217,15 @@ export async function handlePortal(req, res, url, { send, readJson }) {
 
   // ── Tenant ──
   if (user.role === 'tenant' && path === '/api/tenant/overview' && req.method === 'GET') {
-    return send(res, 200, await tenantOverview(user.phone));
+    return send(res, 200, await tenantOverview(user));
+  }
+
+  // "Call me": always the verified phone on this account; the body only picks the language.
+  if (user.role === 'tenant' && path === '/api/tenant/call-me' && req.method === 'POST') {
+    const body = await readJson(req);
+    const profile = findUser(user.uid)?.profiles?.tenant;
+    const out = await requestCallback({ phone: user.phone, name: profile?.fullName?.split(' ')[0], language: body.language ?? profile?.language });
+    return send(res, out.error ? 429 : 202, out);
   }
 
   // Signed-in tenants get the exact location and visit times.

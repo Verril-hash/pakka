@@ -1,6 +1,7 @@
 import { ChevronRight, Clock3, Home as HomeIcon, IndianRupee, Languages, Lock, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CallMeForm from '../../components/CallMeForm';
+import RealCallPlayer from '../../components/RealCallPlayer';
 import HowItWorksScroll from '../../components/HowItWorksScroll';
 import LiveCallDemo from '../../components/LiveCallDemo';
 import Reveal from '../../components/Reveal';
@@ -159,11 +160,12 @@ export default function Home() {
 
       {/* ── Call me ───────────────────────────────────── */}
       <Section grey id="call" className="py-28 md:py-36">
-        <div className="grid items-center gap-14 md:grid-cols-2">
-          <Reveal>
-            <h2 className="text-[40px] font-semibold leading-[1.06] tracking-display md:text-[56px]">Talk to Pakka.<br /><span className="text-ink-400">Right now.</span></h2>
-            <p className="mt-6 max-w-[440px] text-[19px] leading-relaxed text-ink-500">Leave your number and Pakka calls you within seconds. Tell us what you're looking for, and we'll find you flats straight from their owners.</p>
-          </Reveal>
+        <Reveal>
+          <h2 className="text-[40px] font-semibold leading-[1.06] tracking-display md:text-[56px]">Hear Pakka at work.<br /><span className="text-ink-400">Then let her call you.</span></h2>
+          <p className="mt-6 max-w-[620px] text-[19px] leading-relaxed text-ink-500">A real call: Pakka checks a flat with its owner, gets the latest rent and rules, and books a visit. Sign in and she'll call you the same way to find your flat.</p>
+        </Reveal>
+        <div className="mt-12 grid items-start gap-6 lg:grid-cols-[1.6fr_1fr]">
+          <Reveal><RealCallPlayer /></Reveal>
           <Reveal delay={120}><CallMeForm /></Reveal>
         </div>
       </Section>

@@ -215,23 +215,27 @@ function listingDetail(id) {
   return { ...l, requests, visits: db.visits.filter((v) => v.listingId === l.id), doNotCall: db.doNotCall.includes(l.ownerPhone) };
 }
 
-// ── Website "get a call" (public, so rate-limited: it spends real call minutes) ─
+// ── "Call me" for signed-in tenants: only ever calls the account's verified phone ─
+// The public site plays a recorded call instead, so nobody can point Pakka at someone else's number.
 
-const recentCallbacks = new Map(); // phone → timestamp
+const recentCallbacks = new Map(); // phone → timestamps today
 const callbackLog = []; // timestamps, for the global hourly cap
 const PER_PHONE_MS = 10 * 60 * 1000;
+const PER_PHONE_PER_DAY = 3;
 const MAX_PER_HOUR = 12;
 
-async function requestCallback({ name, phone, language, consent }) {
+/** `phone` must come from the signed-in session, never from the request body. */
+export async function requestCallback({ name, phone, language }) {
   const to = normalizePhone(phone);
-  if (!/^\+91[6-9]\d{9}$/.test(to ?? '')) return { error: 'Enter a 10-digit Indian mobile number.' };
-  if (!consent) return { error: 'Please agree to receive a call from Pakka.' };
+  if (!/^\+91[6-9]\d{9}$/.test(to ?? '')) return { error: 'Pakka can call Indian mobile numbers only.' };
   const now = Date.now();
-  if (now - (recentCallbacks.get(to) ?? 0) < PER_PHONE_MS) return { error: 'We just called this number. Please wait a few minutes.' };
+  const mine = (recentCallbacks.get(to) ?? []).filter((t) => now - t < 24 * 60 * 60 * 1000);
+  if (mine.length && now - mine.at(-1) < PER_PHONE_MS) return { error: 'Pakka just called you. Please wait a few minutes.' };
+  if (mine.length >= PER_PHONE_PER_DAY) return { error: "That's today's calls. Pakka is still working on your search, and you can call again tomorrow." };
   while (callbackLog.length && now - callbackLog[0] > 60 * 60 * 1000) callbackLog.shift();
   if (callbackLog.length >= MAX_PER_HOUR) return { error: 'Pakka is busy right now. Please try again in a little while.' };
 
-  recentCallbacks.set(to, now);
+  recentCallbacks.set(to, [...mine, now]);
   callbackLog.push(now);
   const lang = ['en', 'hi', 'kn', 'ta'].includes(language) ? language : 'en';
   const tenantName = String(name ?? '').trim().slice(0, 40) || 'there';
@@ -248,6 +252,10 @@ function approx(v, id, k) {
   return Math.round(v * 100) / 100 + (h - 0.5) * 0.004;
 }
 
+// Until owners' own photos are added, each flat shows a sample interior (labelled "Sample photo" on the card).
+const SAMPLE_PHOTOS = 6;
+const samplePhoto = (id) => `/images/flats/flat-${(Number(String(id).replace(/\D/g, '')) || 0) % SAMPLE_PHOTOS}.jpg`;
+
 export function publicListings() {
   return db.listings
     .filter((l) => l.status === 'available' && !l.isBroker)
@@ -255,6 +263,7 @@ export function publicListings() {
       id: l.id, bhk: l.bhk, area: l.area, rent: l.rent, deposit: l.deposit, furnishing: l.furnishing,
       tenantPreference: l.tenantPreference, pets: l.pets, parking: l.parking, houseRules: l.houseRules,
       availableFrom: l.availableFrom, verifiedAt: l.verifiedAt,
+      photo: l.photo ?? samplePhoto(l.id), samplePhoto: !l.photo,
       lastCallAt: l.lastCallAt ?? l.history?.at(-1)?.at ?? null,
       lat: l.lat == null ? null : approx(l.lat, l.id, 'lat'),
       lng: l.lng == null ? null : approx(l.lng, l.id, 'lng'),
@@ -269,11 +278,6 @@ export async function handleApi(req, res, url, { send, readJson }) {
 
   if (path === '/api/public/listings' && req.method === 'GET') {
     return send(res, 200, { listings: publicListings() });
-  }
-
-  if (path === '/api/public/callback' && req.method === 'POST') {
-    const out = await requestCallback(await readJson(req));
-    return send(res, out.error ? 429 : 202, out);
   }
 
   // Everything below is the team console: team session required, from anywhere.

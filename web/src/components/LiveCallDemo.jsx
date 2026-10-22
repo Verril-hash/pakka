@@ -227,15 +227,15 @@ export default function LiveCallDemo({ className = '' }) {
               })}
             </ul>
 
-            {/* Stamp */}
-            {done && (
-              <div className="pointer-events-none absolute right-5 top-12 animate-stamp">
-                <div className="rounded-xl border-[2.5px] border-brand-600 bg-white/80 px-3.5 py-2 text-center text-brand-700 backdrop-blur-sm">
+            {/* Stamp: its own reserved row, so it never covers the flat details (it did on phones) */}
+            <div className="pointer-events-none mt-4 flex h-[62px] items-center justify-center">
+              {done && (
+                <div className="animate-stamp rounded-xl border-[2.5px] border-brand-600 bg-white/80 px-3.5 py-2 text-center text-brand-700 backdrop-blur-sm">
                   <img src="/images/pakka-wordmark.png" alt="Pakka" className="mx-auto h-5 w-auto" />
                   <p className="mt-1 text-[10px] font-bold uppercase tracking-[.16em]">Visit booked</p>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
