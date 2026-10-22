@@ -2,6 +2,7 @@ import { Building2, Download, Map as MapIcon, Plus, Rows3, Search } from 'lucide
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import ListingStatusBadge from '../../components/ListingStatusBadge';
+import OwnerRequests from '../../components/OwnerRequests';
 import MapView, { pinLabel } from '../../components/MapView';
 import { Badge, Empty, ErrorNote, LangBadge, PageHeader, Skeleton, Tabs } from '../../components/ui';
 import { useApi } from '../../lib/api';
@@ -54,6 +55,7 @@ export default function Listings() {
         }
       />
       <ErrorNote error={error} />
+      <OwnerRequests />
 
       <div className="card">
         <div className="px-4 pt-3">
@@ -65,6 +67,7 @@ export default function Listings() {
               { value: 'confirmed', label: 'Current', count: (counts.confirmed ?? 0) + (counts.calling ?? 0) },
               { value: 'stale', label: 'Needs re-check', count: counts.stale ?? 0 },
               { value: 'rented', label: 'Rented', count: counts.rented ?? 0 },
+              { value: 'removed', label: 'Removed', count: counts.removed ?? 0 },
               { value: 'broker', label: 'Broker', count: counts.broker ?? 0 },
             ]}
           />

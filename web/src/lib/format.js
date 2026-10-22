@@ -54,6 +54,7 @@ export function maskPhone(p) {
 /** One status for a listing, used everywhere a listing is shown. */
 export function listingStatus(l, callingIds = new Set()) {
   if (callingIds.has(l.id)) return 'calling';
+  if (l.status === 'removed') return 'removed';
   if (l.status === 'rented') return 'rented';
   if (l.status === 'broker_flagged' || l.isBroker) return 'broker';
   return isFresh(l.lastConfirmedAt) ? 'confirmed' : 'stale';
@@ -64,6 +65,7 @@ export const LISTING_STATUS = {
   stale: { label: 'Needs re-check', tone: 'amber' },
   calling: { label: 'On a call', tone: 'blue' },
   rented: { label: 'Rented', tone: 'gray' },
+  removed: { label: 'Removed by owner', tone: 'gray' },
   broker: { label: 'Broker', tone: 'red' },
 };
 

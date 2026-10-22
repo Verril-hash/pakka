@@ -9,9 +9,12 @@ import { currentUser, endSession, findUser, profileComplete, saveProfile, sessio
 import { db, findListing, logEvent, save } from './store.mjs';
 import { isFresh, normalizePhone, rupees } from './util.mjs';
 
+const clean = (v, max = 80) => String(v ?? '').trim().slice(0, max);
+
 const firstName = (name) => String(name ?? '').trim().split(/\s+/)[0] || '';
 
 function ownerListingStatus(l) {
+  if (l.status === 'removed') return 'removed';
   if (l.status === 'rented') return 'rented';
   if (l.status === 'broker_flagged' || l.isBroker) return 'hidden';
   return isFresh(l.lastConfirmedAt) ? 'live' : 'needs_check';
@@ -61,10 +64,15 @@ async function ownerOverview(phone) {
     flats: mine.map((l) => ({
       id: l.id, bhk: l.bhk, area: l.area, landmark: l.landmark, rent: l.rent, deposit: l.deposit,
       furnishing: l.furnishing, tenantPreference: l.tenantPreference, pets: l.pets, houseRules: l.houseRules,
-      availableFrom: l.availableFrom, visitSlots: l.visitSlots, status: ownerListingStatus(l),
+      availableFrom: l.availableFrom, visitSlots: l.visitSlots, status: ownerListingStatus(l), ownerUpdatedAt: l.ownerUpdatedAt ?? null,
       verifiedAt: l.verifiedAt, lastCallAt: l.lastCallAt ?? l.history.at(-1)?.at ?? null, lat: l.lat, lng: l.lng,
     })),
     calls,
+    // Flats the owner asked us to list, waiting for the team's visit.
+    requests: (db.listingRequests ?? [])
+      .filter((r) => r.ownerPhone === phone && ['pending', 'visit_scheduled'].includes(r.status))
+      .map(({ ownerPhone, uid, ...r }) => r)
+      .reverse(),
     visits: db.visits
       .filter((v) => ids.has(v.listingId))
       .map((v) => {
@@ -190,17 +198,78 @@ export async function handlePortal(req, res, url, { send, readJson }) {
   if (user.role === 'owner') {
     if (path === '/api/owner/overview' && req.method === 'GET') return send(res, 200, await ownerOverview(user.phone));
 
-    m = path.match(/^\/api\/owner\/flats\/([\w-]+)\/(rented|available)$/);
+    m = path.match(/^\/api\/owner\/flats\/([\w-]+)\/(rented|available|remove|price)$/);
     if (m && req.method === 'POST') {
       const l = findListing(m[1]);
       if (!l || l.ownerPhone !== user.phone) return send(res, 404, { error: 'Not found' });
+      const body = await readJson(req);
       if (m[2] === 'rented') {
         l.status = 'rented';
         logEvent('listing_rented', `${l.ownerName} marked ${l.id} as rented — hidden from search`, { listingId: l.id });
-      } else if (l.status === 'rented') {
-        l.status = 'available';
-        logEvent('listing_reopened', `${l.ownerName} marked ${l.id} as available again`, { listingId: l.id });
+      } else if (m[2] === 'available') {
+        if (l.status === 'rented' || l.status === 'removed') {
+          l.status = 'available';
+          logEvent('listing_reopened', `${l.ownerName} put ${l.id} back on Pakka`, { listingId: l.id });
+        }
+      } else if (m[2] === 'remove') {
+        // Kept, not deleted: past visits and calls still point at it, and the owner can bring it back.
+        l.status = 'removed';
+        l.removedAt = new Date().toISOString();
+        l.removedReason = clean(body.reason, 120) || null;
+        logEvent('listing_removed', `${l.ownerName} removed ${l.id} from Pakka${l.removedReason ? ` (${l.removedReason})` : ''}`, { listingId: l.id });
+      } else {
+        const rent = Math.round(Number(body.rent));
+        const deposit = body.deposit === '' || body.deposit == null ? l.deposit : Math.round(Number(body.deposit));
+        if (!(rent >= 2000 && rent <= 500000)) return send(res, 400, { error: 'Please enter the monthly rent in rupees, e.g. 25000.' });
+        if (!(deposit >= 0 && deposit <= 5000000)) return send(res, 400, { error: 'Please enter the deposit in rupees, e.g. 100000.' });
+        if (rent === l.rent && deposit === l.deposit) return send(res, 200, { ok: true });
+        logEvent('price_updated_by_owner', `${l.ownerName} updated ${l.id}: rent ${rupees(l.rent)} → ${rupees(rent)}, deposit ${rupees(l.deposit)} → ${rupees(deposit)}`, { listingId: l.id });
+        Object.assign(l, { rent, deposit, ownerUpdatedAt: new Date().toISOString() }); // Pakka's next check-in call confirms it
       }
+      save();
+      return send(res, 200, { ok: true });
+    }
+
+    // "List another flat": a request for the team's visit. Nothing goes live until the team has seen the flat.
+    if (path === '/api/owner/listing-requests' && req.method === 'POST') {
+      const b = await readJson(req);
+      const area = clean(b.area, 60);
+      const bhk = Math.round(Number(b.bhk));
+      const rent = Math.round(Number(b.rent));
+      const deposit = b.deposit ? Math.round(Number(b.deposit)) : null;
+      if (area.length < 2) return send(res, 400, { error: 'Which area is the flat in?' });
+      if (!(bhk >= 1 && bhk <= 6)) return send(res, 400, { error: 'How many bedrooms (BHK)?' });
+      if (!(rent >= 2000 && rent <= 500000)) return send(res, 400, { error: 'Please enter the expected rent in rupees, e.g. 25000.' });
+      if (deposit != null && !(deposit >= 0 && deposit <= 5000000)) return send(res, 400, { error: 'Please enter the deposit in rupees.' });
+      db.listingRequests ??= [];
+      const open = db.listingRequests.filter((r) => r.ownerPhone === user.phone && ['pending', 'visit_scheduled'].includes(r.status));
+      if (open.length >= 5) return send(res, 429, { error: 'You have 5 flats waiting for our visit. Our team will call you about them first.' });
+      const mine = db.listings.find((l) => l.ownerPhone === user.phone);
+      const request = {
+        id: randomUUID().slice(0, 8),
+        ownerPhone: user.phone,
+        uid: user.uid,
+        ownerName: mine?.ownerName ?? findUser(user.uid)?.profiles?.owner?.fullName ?? '',
+        ownerLanguage: mine?.ownerLanguage ?? 'en',
+        area, bhk, rent, deposit,
+        furnishing: ['unfurnished', 'semi-furnished', 'fully furnished'].includes(b.furnishing) ? b.furnishing : null,
+        availableFrom: clean(b.availableFrom, 40) || null,
+        visitTime: clean(b.visitTime, 80) || null,
+        notes: clean(b.notes, 300) || null,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      };
+      db.listingRequests.push(request);
+      logEvent('listing_request', `${request.ownerName || 'An owner'} asked to list a ${bhk} BHK in ${area} (${rupees(rent)})`, {});
+      save();
+      return send(res, 201, { ok: true, id: request.id });
+    }
+
+    m = path.match(/^\/api\/owner\/listing-requests\/([\w-]+)\/cancel$/);
+    if (m && req.method === 'POST') {
+      const r = (db.listingRequests ?? []).find((x) => x.id === m[1] && x.ownerPhone === user.phone);
+      if (!r) return send(res, 404, { error: 'Not found' });
+      if (['pending', 'visit_scheduled'].includes(r.status)) r.status = 'cancelled';
       save();
       return send(res, 200, { ok: true });
     }

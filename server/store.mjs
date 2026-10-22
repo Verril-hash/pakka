@@ -34,7 +34,7 @@ function seed() {
     notes: [],
     history: [],
   }));
-  return { listings, sessions: [], visits: [], doNotCall: [], events: [], users: [], authSessions: {} };
+  return { listings, sessions: [], visits: [], doNotCall: [], events: [], users: [], authSessions: {}, listingRequests: [] };
 }
 
 // ── Firestore persistence: collection "state", one or more chunk docs per top-level key ──
@@ -94,6 +94,7 @@ const loaded = FIRESTORE ? (await loadRemote()) ?? (process.env.SEED_FROM_FILE ?
 export const db = loaded ?? seed();
 db.authSessions ??= {};
 db.users ??= [];
+db.listingRequests ??= [];
 if (FIRESTORE) console.log(`[store] Firestore: ${loaded ? 'loaded' : 'seeded'} — ${db.listings.length} listings, ${db.users.length} accounts`);
 
 /** Back to the seed listings, in place, so every module keeps the same `db` reference. */

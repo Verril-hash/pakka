@@ -196,6 +196,7 @@ function applyResult(listing, fields, executionId, question = '') {
   }
 
   if (r.rent) listing.rent = r.rent;
+  listing.ownerUpdatedAt = null; // a price the owner typed in is now confirmed on a call
   if (r.deposit) listing.deposit = r.deposit;
   if (['family', 'bachelors', 'anyone'].includes(r.tenants)) listing.tenantPreference = r.tenants === 'anyone' ? 'any' : r.tenants;
   if (r.rules) listing.houseRules = r.rules;

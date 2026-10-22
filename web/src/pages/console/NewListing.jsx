@@ -1,6 +1,6 @@
 import { ArrowLeft, ShieldCheck } from 'lucide-react';
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card } from '../../components/ui';
 import { api } from '../../lib/api';
 
@@ -21,6 +21,22 @@ export default function NewListing() {
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const requestId = useSearchParams()[0].get('request');
+
+  // From an owner's request: start with what they told us (the team still checks everything on the visit).
+  useEffect(() => {
+    if (!requestId) return;
+    api('/api/listing-requests').then(({ requests }) => {
+      const r = requests.find((x) => x.id === requestId);
+      if (!r) return;
+      setF((cur) => ({
+        ...cur,
+        ownerName: r.ownerName ?? '', ownerPhone: r.ownerPhone ?? '', ownerLanguage: r.ownerLanguage ?? cur.ownerLanguage,
+        bhk: String(r.bhk), area: AREAS[r.area] ? r.area : cur.area, rent: String(r.rent ?? ''), deposit: String(r.deposit ?? ''),
+        furnishing: r.furnishing ?? cur.furnishing, availableFrom: r.availableFrom ?? cur.availableFrom, notes: r.notes ?? '',
+      }));
+    }).catch(() => {});
+  }, [requestId]);
 
   async function submit(e) {
     e.preventDefault();
@@ -30,7 +46,7 @@ export default function NewListing() {
       // Small jitter so flats in the same area don't stack on one map point.
       const [lat, lng] = AREAS[f.area] ?? [12.97, 77.72];
       const jitter = () => (Math.random() - 0.5) * 0.006;
-      const { listing } = await api('/api/listings', { method: 'POST', body: { ...f, lat: lat + jitter(), lng: lng + jitter() } });
+      const { listing } = await api('/api/listings', { method: 'POST', body: { ...f, requestId, lat: lat + jitter(), lng: lng + jitter() } });
       navigate(`/console/listings/${listing.id}`);
     } catch (err) {
       setError(err.message);

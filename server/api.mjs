@@ -204,6 +204,9 @@ function addListing(body) {
     history: [],
   };
   db.listings.push(listing);
+  // Created from an owner's "List another flat" request: close the request and point it at the listing.
+  const request = body.requestId && db.listingRequests.find((r) => r.id === body.requestId);
+  if (request) Object.assign(request, { status: 'listed', listingId: listing.id, closedAt: new Date().toISOString() });
   logEvent('listing_added', `${listing.verifiedBy} verified ${listing.id}: ${listing.bhk} BHK in ${listing.area}`, { listingId: listing.id });
   return { listing };
 }
@@ -263,7 +266,7 @@ export function publicListings() {
       id: l.id, bhk: l.bhk, area: l.area, rent: l.rent, deposit: l.deposit, furnishing: l.furnishing,
       tenantPreference: l.tenantPreference, pets: l.pets, parking: l.parking, houseRules: l.houseRules,
       availableFrom: l.availableFrom, verifiedAt: l.verifiedAt,
-      photo: l.photo ?? samplePhoto(l.id), samplePhoto: !l.photo,
+      photo: l.photo ?? samplePhoto(l.id), samplePhoto: !l.photo, ownerUpdatedAt: l.ownerUpdatedAt ?? null,
       lastCallAt: l.lastCallAt ?? l.history?.at(-1)?.at ?? null,
       lat: l.lat == null ? null : approx(l.lat, l.id, 'lat'),
       lng: l.lng == null ? null : approx(l.lng, l.id, 'lng'),
@@ -303,6 +306,19 @@ export async function handleApi(req, res, url, { send, readJson }) {
   }
   if (req.method === 'GET' && path === '/api/requests') return send(res, 200, { requests: [...db.sessions].reverse(), listings: db.listings.map(({ id, area, bhk, ownerName, ownerLanguage }) => ({ id, area, bhk, ownerName, ownerLanguage })), visits: db.visits });
   if (req.method === 'GET' && path === '/api/owners') return send(res, 200, { owners: owners() });
+
+  // Owners' "List another flat" requests, newest first.
+  if (req.method === 'GET' && path === '/api/listing-requests') return send(res, 200, { requests: [...db.listingRequests].reverse() });
+  if (req.method === 'POST' && (p = m(/^\/api\/listing-requests\/([\w-]+)\/status$/))) {
+    const r = db.listingRequests.find((x) => x.id === p[1]);
+    if (!r) return send(res, 404, { error: 'not found' });
+    const { status } = await readJson(req);
+    if (!['pending', 'visit_scheduled', 'declined'].includes(status)) return send(res, 400, { error: 'bad status' });
+    r.status = status;
+    logEvent('listing_request_status', `Listing request ${r.id} (${r.bhk} BHK, ${r.area}) → ${status.replace('_', ' ')}`, {});
+    save();
+    return send(res, 200, { ok: true });
+  }
   if (req.method === 'GET' && path === '/api/visits') return send(res, 200, { visits: [...db.visits].reverse(), listings: db.listings.map(({ id, area, bhk, ownerName, landmark }) => ({ id, area, bhk, ownerName, landmark })) });
   if (req.method === 'GET' && path === '/api/events') return send(res, 200, { events: db.events.slice(-200).reverse() });
   if (req.method === 'GET' && path === '/api/calls') return send(res, 200, { calls: await listCalls({ fresh: url.searchParams.has('fresh') }) });

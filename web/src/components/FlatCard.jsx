@@ -66,7 +66,7 @@ export default function FlatCard({ flat: l, tenant, busyElsewhere, onDone, delay
       <div className="flex flex-1 flex-col p-6">
         <p className="text-[13px] font-medium text-ink-400">{l.area}</p>
         <p className="mt-1 text-[24px] font-semibold tracking-display">{rupees(l.rent)}<span className="text-[15px] font-normal text-ink-400"> /month</span></p>
-        <p className="mt-1 text-[14px] text-ink-500">Deposit {rupees(l.deposit)}</p>
+        <p className="mt-1 text-[14px] text-ink-500">Deposit {rupees(l.deposit)}{l.ownerUpdatedAt ? ` · price updated by the owner ${ago(l.ownerUpdatedAt)}` : ''}</p>
         {!l.approximate && l.landmark && (
           <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-medium text-ink-900">
             <span className="flex items-center gap-1.5"><MapPin size={14} className="text-brand-600" />{l.landmark}</span>
