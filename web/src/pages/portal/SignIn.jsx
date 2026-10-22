@@ -176,7 +176,8 @@ export default function SignIn({ team = false }) {
             </form>
           )}
 
-          {stage === 'profile' && <ProfileForm role={role} me={me} onDone={() => goHome(role)} />}
+          {/* A new account always lands on its own page first, wherever sign-in started. */}
+          {stage === 'profile' && <ProfileForm role={role} me={me} onDone={() => navigate(HOME[role])} />}
 
           {error && <p className="mt-4 text-[14px] text-[#d70015]">{error}</p>}
           <div id="recaptcha" />

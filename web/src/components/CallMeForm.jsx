@@ -1,6 +1,6 @@
 import { Check, Lock, PhoneCall } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 
 const LANGS = [['en', 'English'], ['hi', 'हिंदी'], ['kn', 'ಕನ್ನಡ'], ['ta', 'தமிழ்']];
@@ -12,7 +12,6 @@ const spaced = (p) => (p ? `${p.slice(0, 3)} ${p.slice(3, 8)} ${p.slice(8)}` : '
  * whatever the browser sends, so Pakka never rings anyone who didn't sign up for it.
  */
 export default function CallMeForm() {
-  const { pathname } = useLocation();
   const [me, setMe] = useState(undefined); // undefined = loading
   const [language, setLanguage] = useState('en');
   const [state, setState] = useState({ status: 'idle' });
@@ -43,7 +42,7 @@ export default function CallMeForm() {
         <p className="mt-2 text-[16px] leading-relaxed text-ink-500">
           Sign in with your phone number and Pakka calls you on it within seconds. Tell her the area, BHK and budget, in English, हिंदी, ಕನ್ನಡ or தமிழ்.
         </p>
-        <Link to={`/signin?as=tenant&next=${encodeURIComponent(`${pathname}#call`)}`} className="btn-primary mt-6 h-12 w-full text-[17px]">
+        <Link to={`/signin?as=tenant&next=${encodeURIComponent('/me#call')}`} className="btn-primary mt-6 h-12 w-full text-[17px]">
           <Lock size={16} /> {me.role === 'tenant' ? 'Finish your profile' : 'Sign in to get a call'}
         </Link>
       </div>

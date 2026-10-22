@@ -1,6 +1,6 @@
 import { CalendarCheck, Check, ChevronRight, Loader2, MapPin, PhoneCall, X } from 'lucide-react';
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import CallMeForm from '../../components/CallMeForm';
 import FlatCard from '../../components/FlatCard';
 import MapView from '../../components/MapView';
@@ -24,9 +24,9 @@ const REQUEST_STATUS = {
   done: { label: 'Done', tone: 'green' },
 };
 
-function Section({ title, children, action }) {
+function Section({ id, title, children, action }) {
   return (
-    <section className="mt-10">
+    <section id={id} className="mt-10 scroll-mt-20">
       <div className="flex items-end justify-between gap-3">
         <h2 className="text-[22px] font-semibold tracking-display text-ink-900">{title}</h2>
         {action}
@@ -53,6 +53,10 @@ export default function TenantHome() {
   const { data, reload } = useApi('/api/tenant/overview', { interval: 8000 });
   const flats = useApi('/api/tenant/listings', { interval: 15000 });
   const [openCall, setOpenCall] = useState(null);
+  const { hash } = useLocation();
+  const ready = Boolean(data);
+  // Arriving from 'Sign in to get a call' (/me#call): go straight to the call card once the page is drawn.
+  useEffect(() => { if (ready && hash) document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth' }); }, [ready, hash]);
 
   if (!data) return <div className="h-64 animate-pulse rounded-[28px] bg-white" />;
   const { search } = data;
@@ -151,7 +155,7 @@ export default function TenantHome() {
       </Section>
 
       {/* ── Get a call ── */}
-      <Section title="Talk to Pakka">
+      <Section id="call" title="Talk to Pakka">
         <div className="grid items-start gap-5 md:grid-cols-[1fr_1.1fr]">
           <CallMeForm />
           <div className="rounded-[28px] bg-dark-card p-7 text-white md:p-8">
