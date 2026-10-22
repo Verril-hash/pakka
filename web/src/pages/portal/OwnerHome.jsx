@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Badge, LangBadge } from '../../components/ui';
 import { api, useApi } from '../../lib/api';
 import { ago, dateTime, duration, rupees } from '../../lib/format';
+import FlatRequestForm from '../../components/FlatRequestForm';
+import OwnerOnboarding from './OwnerOnboarding';
 import PortalCallDrawer from './PortalCallDrawer';
 
 const STATUS = {
@@ -70,48 +72,6 @@ function RemoveForm({ onRemove, onCancel }) {
   );
 }
 
-/** "List another flat": a request for the Pakka team's visit. Nothing goes live until the team has seen it. */
-function NewFlatForm({ onDone, onCancel }) {
-  const [f, setF] = useState({ area: '', bhk: '2', rent: '', deposit: '', furnishing: 'semi-furnished', availableFrom: '', visitTime: '', notes: '' });
-  const [state, setState] = useState({ status: 'idle' });
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
-  const digits = (k) => (e) => setF({ ...f, [k]: e.target.value.replace(/\D/g, '') });
-  async function submit(e) {
-    e.preventDefault();
-    setState({ status: 'sending' });
-    try { await api('/api/owner/listing-requests', { method: 'POST', body: f }); onDone(); } catch (err) { setState({ status: 'error', message: err.message }); }
-  }
-  return (
-    <form onSubmit={submit} className="mb-4 space-y-4 rounded-[24px] bg-white p-6 shadow-card">
-      <div>
-        <p className="text-[19px] font-semibold tracking-display text-ink-900">List another flat</p>
-        <p className="mt-1 text-[14px] text-ink-500">The Pakka team visits every flat before tenants see it. Tell us the basics and we'll call you to fix a time.</p>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div><label className="label">Area</label><input className="input h-11" placeholder="e.g. Brookefield" value={f.area} onChange={set('area')} required /></div>
-        <div><label className="label">Size</label>
-          <select className="input h-11" value={f.bhk} onChange={set('bhk')}>{[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n} BHK</option>)}</select>
-        </div>
-        <div><label className="label">Expected rent / month</label><input inputMode="numeric" className="input tnum h-11" placeholder="25000" value={f.rent} onChange={digits('rent')} required /></div>
-        <div><label className="label">Deposit</label><input inputMode="numeric" className="input tnum h-11" placeholder="100000" value={f.deposit} onChange={digits('deposit')} /></div>
-        <div><label className="label">Furnishing</label>
-          <select className="input h-11" value={f.furnishing} onChange={set('furnishing')}>
-            <option value="unfurnished">Unfurnished</option><option value="semi-furnished">Semi-furnished</option><option value="fully furnished">Fully furnished</option>
-          </select>
-        </div>
-        <div><label className="label">Free from</label><input className="input h-11" placeholder="e.g. 1 December" value={f.availableFrom} onChange={set('availableFrom')} /></div>
-      </div>
-      <div><label className="label">Good time for our visit</label><input className="input h-11" placeholder="e.g. Weekday evenings, or Saturday morning" value={f.visitTime} onChange={set('visitTime')} /></div>
-      <div><label className="label">Anything else (optional)</label><input className="input h-11" placeholder="Parking, pets, who you'd like as tenants…" value={f.notes} onChange={set('notes')} /></div>
-      {state.status === 'error' && <p className="text-[14px] text-[#d70015]">{state.message}</p>}
-      <div className="flex gap-2">
-        <button className="btn-primary" disabled={state.status === 'sending'}>{state.status === 'sending' ? 'Sending…' : 'Send to Pakka'}</button>
-        <button type="button" onClick={onCancel} className="btn-secondary">Cancel</button>
-      </div>
-    </form>
-  );
-}
-
 export default function OwnerHome() {
   const { data, reload } = useApi('/api/owner/overview', { interval: 15000 });
   const [openCall, setOpenCall] = useState(null);
@@ -125,6 +85,7 @@ export default function OwnerHome() {
   }
 
   if (!data) return <div className="h-64 animate-pulse rounded-[28px] bg-white" />;
+  if (data.pending) return <OwnerOnboarding data={data} reload={reload} />;
   const answered = data.calls.filter((c) => c.answered).length;
 
   return (
@@ -148,7 +109,16 @@ export default function OwnerHome() {
         title={data.flats.length > 1 ? 'Your flats' : 'Your flat'}
         action={!adding && <button onClick={() => setAdding(true)} className="btn-secondary h-9"><Plus size={15} />List another flat</button>}
       >
-        {adding && <NewFlatForm onDone={() => { setAdding(false); reload(); }} onCancel={() => setAdding(false)} />}
+        {adding && (
+          <FlatRequestForm
+            className="mb-4"
+            endpoint="/api/owner/listing-requests"
+            title="List another flat"
+            intro="The Pakka team visits every flat before tenants see it. Tell us the basics and we'll call you to fix a time."
+            onDone={() => { setAdding(false); reload(); }}
+            onCancel={() => setAdding(false)}
+          />
+        )}
         <div className="grid gap-4 md:grid-cols-2">
           {data.requests.map((r) => (
             <article key={r.id} className="rounded-[24px] border-2 border-dashed border-black/10 bg-white/60 p-6">

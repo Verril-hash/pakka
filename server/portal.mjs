@@ -5,11 +5,51 @@ import { bolna } from '../lib/bolna.mjs';
 import { listCalls, publicListings, requestCallback } from './api.mjs';
 import { requestOwnerCheck } from './checks.mjs';
 import { randomUUID } from 'node:crypto';
-import { currentUser, endSession, findUser, profileComplete, saveProfile, sessionCookie, signInWithFirebase } from './auth.mjs';
+import { currentUser, endSession, findUser, ownerStatus, profileComplete, saveProfile, sessionCookie, signInWithFirebase } from './auth.mjs';
 import { db, findListing, logEvent, save } from './store.mjs';
 import { isFresh, normalizePhone, rupees } from './util.mjs';
 
 const clean = (v, max = 80) => String(v ?? '').trim().slice(0, max);
+
+/**
+ * An owner's request to list a flat, for the team to visit. kind 'first' is a new owner's application
+ * (approving it verifies the owner); 'another' is an approved owner adding a flat. Returns { request } or { error }.
+ */
+function createListingRequest(user, b, kind) {
+  const area = clean(b.area, 60);
+  const bhk = Math.round(Number(b.bhk));
+  const rent = Math.round(Number(b.rent));
+  const deposit = b.deposit ? Math.round(Number(b.deposit)) : null;
+  if (area.length < 2) return { error: 'Which area is the flat in?' };
+  if (!(bhk >= 1 && bhk <= 6)) return { error: 'How many bedrooms (BHK)?' };
+  if (!(rent >= 2000 && rent <= 500000)) return { error: 'Please enter the expected rent in rupees, e.g. 25000.' };
+  if (deposit != null && !(deposit >= 0 && deposit <= 5000000)) return { error: 'Please enter the deposit in rupees.' };
+  const open = db.listingRequests.filter((r) => r.ownerPhone === user.phone && ['pending', 'visit_scheduled'].includes(r.status));
+  if (open.length >= 5) return { error: 'You have 5 flats waiting for our visit. Our team will call you about them first.', status: 429 };
+  const mine = db.listings.find((l) => l.ownerPhone === user.phone);
+  const profile = findUser(user.uid)?.profiles?.owner;
+  const request = {
+    id: randomUUID().slice(0, 8),
+    kind,
+    ownerPhone: user.phone,
+    uid: user.uid,
+    ownerName: mine?.ownerName ?? profile?.fullName ?? '',
+    ownerEmail: profile?.email ?? null,
+    ownerLanguage: mine?.ownerLanguage ?? profile?.language ?? 'en',
+    area, bhk, rent, deposit,
+    furnishing: ['unfurnished', 'semi-furnished', 'fully furnished'].includes(b.furnishing) ? b.furnishing : null,
+    availableFrom: clean(b.availableFrom, 40) || null,
+    visitTime: clean(b.visitTime, 80) || null,
+    notes: clean(b.notes, 300) || null,
+    ...(kind === 'first' ? { ownershipConfirmed: true } : {}),
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  };
+  db.listingRequests.push(request);
+  logEvent(kind === 'first' ? 'owner_application' : 'listing_request',
+    `${request.ownerName || 'An owner'} ${kind === 'first' ? 'signed up as a new owner with' : 'asked to list'} a ${bhk} BHK in ${area} (${rupees(rent)})`, {});
+  return { request };
+}
 
 const firstName = (name) => String(name ?? '').trim().split(/\s+/)[0] || '';
 
@@ -169,6 +209,7 @@ export async function handlePortal(req, res, url, { send, readJson }) {
       name: profile?.fullName ?? account?.googleName ?? null,
       email: profile?.email ?? account?.email ?? null,
       profile,
+      ...(user.role === 'owner' ? { ownerStatus: ownerStatus(account) } : {}),
     });
   }
   if (!user) return send(res, 401, { error: 'Please sign in.' });
@@ -196,6 +237,37 @@ export async function handlePortal(req, res, url, { send, readJson }) {
 
   // ── Owner ──
   if (user.role === 'owner') {
+    const account = findUser(user.uid);
+    const status = ownerStatus(account);
+
+    // Not verified yet: only their own application. No listings, calls or visits until the team approves them.
+    if (status !== 'approved') {
+      if (path === '/api/owner/overview' && req.method === 'GET') {
+        const application = db.listingRequests.filter((r) => r.uid === user.uid && r.kind === 'first').at(-1);
+        return send(res, 200, {
+          pending: true,
+          status,
+          name: account?.profiles?.owner?.fullName?.split(' ')[0] ?? '',
+          declineReason: status === 'declined' ? account?.ownerDeclineReason ?? null : null,
+          application: application && ['pending', 'visit_scheduled'].includes(application.status)
+            ? (({ ownerPhone, uid, ...r }) => r)(application) : null,
+        });
+      }
+      if (path === '/api/owner/apply' && req.method === 'POST') {
+        if (status === 'pending') return send(res, 409, { error: 'Your flat is already with our team.' });
+        const b = await readJson(req);
+        if (!b.ownership) return send(res, 400, { error: 'Please confirm you own this flat or are authorised to rent it out.' });
+        const out = createListingRequest(user, b, 'first');
+        if (out.error) return send(res, 400, out);
+        account.ownerStatus = 'pending';
+        account.ownerDeclineReason = null;
+        save();
+        return send(res, 201, { ok: true });
+      }
+      const c = path.match(/^\/api\/owner\/listing-requests\/([\w-]+)\/cancel$/);
+      if (!(c && req.method === 'POST')) return send(res, 403, { error: 'Your owner account is waiting for verification.', pendingOwner: true });
+    }
+
     if (path === '/api/owner/overview' && req.method === 'GET') return send(res, 200, await ownerOverview(user.phone));
 
     m = path.match(/^\/api\/owner\/flats\/([\w-]+)\/(rented|available|remove|price)$/);
@@ -232,37 +304,10 @@ export async function handlePortal(req, res, url, { send, readJson }) {
 
     // "List another flat": a request for the team's visit. Nothing goes live until the team has seen the flat.
     if (path === '/api/owner/listing-requests' && req.method === 'POST') {
-      const b = await readJson(req);
-      const area = clean(b.area, 60);
-      const bhk = Math.round(Number(b.bhk));
-      const rent = Math.round(Number(b.rent));
-      const deposit = b.deposit ? Math.round(Number(b.deposit)) : null;
-      if (area.length < 2) return send(res, 400, { error: 'Which area is the flat in?' });
-      if (!(bhk >= 1 && bhk <= 6)) return send(res, 400, { error: 'How many bedrooms (BHK)?' });
-      if (!(rent >= 2000 && rent <= 500000)) return send(res, 400, { error: 'Please enter the expected rent in rupees, e.g. 25000.' });
-      if (deposit != null && !(deposit >= 0 && deposit <= 5000000)) return send(res, 400, { error: 'Please enter the deposit in rupees.' });
-      db.listingRequests ??= [];
-      const open = db.listingRequests.filter((r) => r.ownerPhone === user.phone && ['pending', 'visit_scheduled'].includes(r.status));
-      if (open.length >= 5) return send(res, 429, { error: 'You have 5 flats waiting for our visit. Our team will call you about them first.' });
-      const mine = db.listings.find((l) => l.ownerPhone === user.phone);
-      const request = {
-        id: randomUUID().slice(0, 8),
-        ownerPhone: user.phone,
-        uid: user.uid,
-        ownerName: mine?.ownerName ?? findUser(user.uid)?.profiles?.owner?.fullName ?? '',
-        ownerLanguage: mine?.ownerLanguage ?? 'en',
-        area, bhk, rent, deposit,
-        furnishing: ['unfurnished', 'semi-furnished', 'fully furnished'].includes(b.furnishing) ? b.furnishing : null,
-        availableFrom: clean(b.availableFrom, 40) || null,
-        visitTime: clean(b.visitTime, 80) || null,
-        notes: clean(b.notes, 300) || null,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-      };
-      db.listingRequests.push(request);
-      logEvent('listing_request', `${request.ownerName || 'An owner'} asked to list a ${bhk} BHK in ${area} (${rupees(rent)})`, {});
+      const out = createListingRequest(user, await readJson(req), 'another');
+      if (out.error) return send(res, out.status ?? 400, out);
       save();
-      return send(res, 201, { ok: true, id: request.id });
+      return send(res, 201, { ok: true, id: out.request.id });
     }
 
     m = path.match(/^\/api\/owner\/listing-requests\/([\w-]+)\/cancel$/);
@@ -270,6 +315,8 @@ export async function handlePortal(req, res, url, { send, readJson }) {
       const r = (db.listingRequests ?? []).find((x) => x.id === m[1] && x.ownerPhone === user.phone);
       if (!r) return send(res, 404, { error: 'Not found' });
       if (['pending', 'visit_scheduled'].includes(r.status)) r.status = 'cancelled';
+      // Cancelling a new owner's first flat takes them back to "tell us about your flat".
+      if (r.kind === 'first' && account && ownerStatus(account) === 'pending') account.ownerStatus = 'new';
       save();
       return send(res, 200, { ok: true });
     }

@@ -6,7 +6,7 @@ import { bolna } from '../lib/bolna.mjs';
 import { db, save, logEvent, findListing } from './store.mjs';
 import { requestRecheck, startTenantCall } from './checks.mjs';
 import { isFresh, normalizePhone } from './util.mjs';
-import { currentUser } from './auth.mjs';
+import { currentUser, findUser } from './auth.mjs';
 
 const AGENTS = {
   check: { id: process.env.PAKKA_CHECK_AGENT_ID, name: 'Pakka Check', role: 'Calls owners to confirm listings' },
@@ -206,7 +206,12 @@ function addListing(body) {
   db.listings.push(listing);
   // Created from an owner's "List another flat" request: close the request and point it at the listing.
   const request = body.requestId && db.listingRequests.find((r) => r.id === body.requestId);
-  if (request) Object.assign(request, { status: 'listed', listingId: listing.id, closedAt: new Date().toISOString() });
+  if (request) {
+    Object.assign(request, { status: 'listed', listingId: listing.id, closedAt: new Date().toISOString() });
+    // A new owner's first flat: listing it is the team's verification of the owner too.
+    const owner = request.kind === 'first' && findUser(request.uid);
+    if (owner) Object.assign(owner, { ownerStatus: 'approved', ownerDeclineReason: null });
+  }
   logEvent('listing_added', `${listing.verifiedBy} verified ${listing.id}: ${listing.bhk} BHK in ${listing.area}`, { listingId: listing.id });
   return { listing };
 }
@@ -312,9 +317,15 @@ export async function handleApi(req, res, url, { send, readJson }) {
   if (req.method === 'POST' && (p = m(/^\/api\/listing-requests\/([\w-]+)\/status$/))) {
     const r = db.listingRequests.find((x) => x.id === p[1]);
     if (!r) return send(res, 404, { error: 'not found' });
-    const { status } = await readJson(req);
+    const { status, reason } = await readJson(req);
     if (!['pending', 'visit_scheduled', 'declined'].includes(status)) return send(res, 400, { error: 'bad status' });
     r.status = status;
+    // Declining a new owner's application: they see the reason and can send a new one.
+    const owner = r.kind === 'first' && status === 'declined' && findUser(r.uid);
+    if (owner && owner.ownerStatus !== 'approved') {
+      owner.ownerStatus = 'declined';
+      owner.ownerDeclineReason = String(reason ?? '').trim().slice(0, 200) || null;
+    }
     logEvent('listing_request_status', `Listing request ${r.id} (${r.bhk} BHK, ${r.area}) → ${status.replace('_', ' ')}`, {});
     save();
     return send(res, 200, { ok: true });

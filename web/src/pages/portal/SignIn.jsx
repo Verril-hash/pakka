@@ -112,7 +112,7 @@ export default function SignIn({ team = false }) {
   const title = team ? 'Pakka team' : stage === 'profile' ? 'A few details' : 'Sign in to Pakka';
   const subtitle = team ? 'Team members only.'
     : stage === 'profile' ? 'So Pakka knows who it is talking to. You only do this once.'
-      : role === 'owner' ? 'Manage your flats and calls from Pakka.' : 'Your requests, visits and calls with Pakka.';
+      : role === 'owner' ? 'List your flat for free, or manage the ones on Pakka.' : 'Your requests, visits and calls with Pakka.';
 
   return (
     <main className="flex min-h-[calc(100vh-48px)] items-start justify-center bg-canvas px-5 pb-20 pt-14 md:pt-20">

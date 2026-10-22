@@ -32,6 +32,16 @@ const sessions = {
 
 export const isOwner = (phone) => db.listings.some((l) => l.ownerPhone === phone);
 
+/**
+ * Where an owner account stands: 'approved' once the team has verified them (any listing on their number),
+ * else 'new' (no flat sent yet), 'pending' (waiting for the team's visit) or 'declined'.
+ */
+export function ownerStatus(user) {
+  if (!user) return 'new';
+  if (isOwner(user.phone) || user.ownerStatus === 'approved') return 'approved';
+  return user.ownerStatus ?? 'new';
+}
+
 /** Pakka team members (console access): comma-separated numbers in TEAM_PHONES. */
 export const isTeam = (phone) => (process.env.TEAM_PHONES ?? '').split(',').map((p) => normalizePhone(p.trim())).includes(phone);
 
@@ -62,7 +72,7 @@ export async function signInWithFirebase({ idToken, role }) {
   const phone = normalizePhone(claims.phone_number);
   if (!phone) return { needsPhone: true };
   if (!/^\+91[6-9]\d{9}$/.test(phone)) return { error: 'Pakka currently supports Indian mobile numbers only.' };
-  if (role === 'owner' && !isOwner(phone)) return { error: "We don't have a flat registered to this number yet. The Pakka team adds flats after meeting the owner." };
+  // New owners can sign up: they start as unverified and see only their application until the team approves them.
   if (role === 'team' && !isTeam(phone)) return { error: 'This account is not on the Pakka team.' };
 
   // Upsert the account: one per Firebase uid, keyed to the verified phone.
