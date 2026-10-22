@@ -1,61 +1,104 @@
-// Phone + one-time-code sign-in for owners and tenants.
+// Sign-in for tenants, owners and the team.
 //
-// Codes aren't delivered yet (no SMS/WhatsApp sender): they're printed in the server log, and
-// returned in the response only for requests made on this machine. Swap `deliver()` for a real
-// sender later; nothing else changes.
+// The browser signs in with Firebase (Google or phone + SMS code) and sends us the Firebase ID token.
+// We verify it with Firebase Admin, require a verified phone number (Pakka works by calling people,
+// and owners are matched to their flats by number), then issue our own httpOnly session cookie.
 
-import { randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
-import { db } from './store.mjs';
+import { randomBytes } from 'node:crypto';
+import { verifyIdToken } from './firebase.mjs';
+import { db, save, logEvent } from './store.mjs';
 import { normalizePhone } from './util.mjs';
 
-const CODE_TTL_MS = 10 * 60 * 1000;
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const MAX_TRIES = 5;
 const COOKIE = 'pakka_session';
+const ROLES = ['tenant', 'owner', 'team'];
 
-const pending = new Map(); // phone → { code, role, exp, tries }
-const sessions = new Map(); // token → { role, phone, exp }
+const sessions = new Map(); // token → { uid, role, phone, exp }
 
 export const isOwner = (phone) => db.listings.some((l) => l.ownerPhone === phone);
 
 /** Pakka team members (console access): comma-separated numbers in TEAM_PHONES. */
 export const isTeam = (phone) => (process.env.TEAM_PHONES ?? '').split(',').map((p) => normalizePhone(p.trim())).includes(phone);
 
-function deliver(phone, code) {
-  console.log(`[auth] one-time code for ${phone}: ${code}`);
+db.users ??= [];
+export const findUser = (uid) => db.users.find((u) => u.uid === uid);
+
+/** True when the person has filled in the profile this role needs. */
+export function profileComplete(user, role) {
+  if (role === 'team') return true;
+  const p = user?.profiles?.[role];
+  return Boolean(p?.fullName && p?.email && p?.consentCalls && (role !== 'owner' || p.consentTerms));
 }
 
-export function startSignIn({ phone, role }, { local }) {
-  const p = normalizePhone(phone);
-  if (!/^\+91[6-9]\d{9}$/.test(p ?? '')) return { error: 'Enter a 10-digit Indian mobile number.' };
-  if (!['owner', 'tenant', 'team'].includes(role)) return { error: 'Choose tenant or owner.' };
-  if (role === 'team' && !isTeam(p)) return { error: 'This number is not on the Pakka team.' };
-  if (role === 'owner' && !isOwner(p)) return { error: "We don't have a flat registered to this number. Pakka adds flats after verifying them in person." };
+/**
+ * Verify a Firebase ID token and start a session for `role`.
+ * Returns { needsPhone } when the account has no verified phone yet (e.g. a fresh Google sign-in).
+ */
+export async function signInWithFirebase({ idToken, role }) {
+  if (!ROLES.includes(role)) return { error: 'Choose tenant or owner.' };
 
-  const prev = pending.get(p);
-  if (prev && prev.exp - CODE_TTL_MS + 30_000 > Date.now()) return { error: 'A code was just sent. Wait 30 seconds before asking again.' };
-
-  const code = String(randomInt(100000, 1000000));
-  pending.set(p, { code, role, exp: Date.now() + CODE_TTL_MS, tries: 0 });
-  deliver(p, code);
-  return { ok: true, phone: p, ...(local ? { devCode: code } : {}) };
-}
-
-export function verifySignIn({ phone, code }) {
-  const p = normalizePhone(phone);
-  const entry = pending.get(p);
-  if (!entry || entry.exp < Date.now()) return { error: 'That code has expired. Ask for a new one.' };
-  entry.tries += 1;
-  const a = Buffer.from(String(code ?? '').trim().padEnd(6, ' ').slice(0, 6));
-  const b = Buffer.from(entry.code);
-  if (!timingSafeEqual(a, b)) {
-    if (entry.tries >= MAX_TRIES) pending.delete(p);
-    return { error: entry.tries >= MAX_TRIES ? 'Too many tries. Ask for a new code.' : 'That code is not right.' };
+  let claims;
+  try {
+    claims = await verifyIdToken(idToken);
+  } catch {
+    return { error: 'Your sign-in could not be verified. Please try again.' };
   }
-  pending.delete(p);
+
+  const phone = normalizePhone(claims.phone_number);
+  if (!phone) return { needsPhone: true };
+  if (!/^\+91[6-9]\d{9}$/.test(phone)) return { error: 'Pakka currently supports Indian mobile numbers only.' };
+  if (role === 'owner' && !isOwner(phone)) return { error: "We don't have a flat registered to this number yet. The Pakka team adds flats after meeting the owner." };
+  if (role === 'team' && !isTeam(phone)) return { error: 'This account is not on the Pakka team.' };
+
+  // Upsert the account: one per Firebase uid, keyed to the verified phone.
+  let user = findUser(claims.uid);
+  if (!user) {
+    user = { uid: claims.uid, phone, email: claims.email ?? null, googleName: claims.name ?? null, createdAt: new Date().toISOString(), profiles: {} };
+    db.users.push(user);
+    logEvent('account_created', `New ${role} account (${claims.firebase?.sign_in_provider ?? 'unknown'} sign-in)`);
+  }
+  user.phone = phone;
+  if (claims.email) user.email = claims.email;
+  user.lastSignInAt = new Date().toISOString();
+  save();
+
   const token = randomBytes(24).toString('base64url');
-  sessions.set(token, { role: entry.role, phone: p, exp: Date.now() + SESSION_TTL_MS });
-  return { ok: true, token, role: entry.role };
+  sessions.set(token, { uid: user.uid, role, phone, exp: Date.now() + SESSION_TTL_MS });
+  return { ok: true, token, role, needsProfile: !profileComplete(user, role) };
+}
+
+const LANGS = ['en', 'hi', 'kn', 'ta'];
+const clean = (v, max = 80) => String(v ?? '').trim().slice(0, max);
+
+/** Save the role's profile for the signed-in user. Validates every field. */
+export function saveProfile(session, body) {
+  const user = findUser(session.uid);
+  if (!user) return { error: 'Please sign in again.' };
+  const fullName = clean(body.fullName, 60);
+  const email = clean(body.email, 120).toLowerCase();
+  if (fullName.length < 2) return { error: 'Please enter your full name.' };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { error: 'Please enter a valid email.' };
+  if (!body.consentCalls) return { error: 'Please agree to receive calls from Pakka.' };
+
+  const profile = {
+    fullName,
+    email,
+    language: LANGS.includes(body.language) ? body.language : 'en',
+    consentCalls: true,
+    updatedAt: new Date().toISOString(),
+  };
+  if (session.role === 'tenant') {
+    profile.moveIn = clean(body.moveIn, 30);
+    profile.budget = Number.isFinite(Number(body.budget)) && Number(body.budget) > 0 ? Math.round(Number(body.budget)) : null;
+    profile.household = ['family', 'bachelors', 'couple', 'single'].includes(body.household) ? body.household : null;
+  }
+  if (session.role === 'owner') {
+    if (!body.consentTerms) return { error: 'Please agree to the owner terms.' };
+    profile.consentTerms = true;
+  }
+  user.profiles = { ...user.profiles, [session.role]: profile };
+  save();
+  return { ok: true };
 }
 
 function readCookie(req) {

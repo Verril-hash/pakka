@@ -2,7 +2,9 @@ import { LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Wordmark } from '../../components/Logo';
+import { signOut as firebaseSignOut } from 'firebase/auth';
 import { api } from '../../lib/api';
+import { auth } from '../../lib/firebase';
 
 /** Shell for the owner and tenant portals. Redirects to sign-in when there's no session. */
 export default function PortalLayout() {
@@ -13,13 +15,14 @@ export default function PortalLayout() {
 
   useEffect(() => {
     api('/api/me').then((m) => {
-      if (m.role !== want) navigate(`/signin?as=${want}`, { replace: true });
+      if (m.role !== want || m.needsProfile) navigate(`/signin?as=${want}`, { replace: true });
       else setMe(m);
     }).catch(() => navigate(`/signin?as=${want}`, { replace: true }));
   }, [want, navigate]);
 
   async function signOut() {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    await firebaseSignOut(auth).catch(() => {});
     navigate('/');
   }
 

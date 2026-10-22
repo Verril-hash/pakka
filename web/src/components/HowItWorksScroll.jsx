@@ -114,8 +114,8 @@ function Chip({ v, status, children }) {
 const STEPS = [
   {
     time: '0:00',
-    title: 'You tell Pakka what you need.',
-    text: 'One call, in English, Hindi, Kannada or Tamil.',
+    title: 'Tell Pakka what you need.',
+    text: 'Call, or ask on the website. In English, Hindi, Kannada or Tamil.',
     scene: (v) => (
       <div className="flex items-end gap-3">
         <Avatar who="tenant" ringing={v > 0.1 && v < 0.9} />
@@ -128,37 +128,30 @@ const STEPS = [
   },
   {
     time: '0:20',
-    title: 'Pakka checks verified flats only.',
-    text: 'No scraped posts. Two flats match, but neither has the dog question on record.',
+    title: 'Get flats straight from owners.',
+    text: 'Pakka shortlists flats that match, each one listed by the person who owns it.',
     scene: (v) => (
       <div className="flex items-center gap-4">
         <PakkaMark />
         <div className="min-w-0 flex-1 space-y-2">
-          <Chip v={win(v, 0.1)} status="pick">PK-101 · Brookefield · ₹23k</Chip>
-          <Chip v={win(v, 0.3)} status="pick">PK-102 · Hoodi · ₹24k</Chip>
-          <In v={win(v, 0.5)}><p className="text-[13px] text-ink-500">Dog allowed? <span className="font-semibold text-ink-900">Not on record.</span> Calling owners…</p></In>
+          <Chip v={win(v, 0.1)} status="pick">2 BHK · Brookefield · ₹23k</Chip>
+          <Chip v={win(v, 0.3)} status="pick">2 BHK · Hoodi · ₹24k</Chip>
+          <In v={win(v, 0.5)}><p className="text-[13px] text-ink-500">Both <span className="font-semibold text-ink-900">direct from owners.</span></p></In>
         </div>
       </div>
     ),
   },
   {
     time: '0:45',
-    title: 'Pakka calls the owners.',
-    text: 'At the same time, each in their own language.',
+    title: 'Get straight answers.',
+    text: "Pets, parking, move-in date: Pakka asks the owner for you, in the owner's language.",
     scene: (v) => (
       <div className="space-y-4">
         <In v={win(v, 0.05)} className="flex items-end gap-3">
           <Avatar who="gowda" size="sm" ringing={v > 0.05 && v < 0.5} />
           <div className="min-w-0 flex-1 space-y-1.5 pb-5">
-            <Say v={win(v, 0.15)}>“Is your 2 BHK still free? Is a small dog okay?”</Say>
+            <Say v={win(v, 0.15)}>“Is a small dog okay in your 2 BHK?”</Say>
             <Say v={win(v, 0.3)} tone="cyan" mine>“ಹೌದು, small dog ಪರವಾಗಿಲ್ಲ.”</Say>
-          </div>
-        </In>
-        <In v={win(v, 0.4)} className="flex items-end gap-3">
-          <Avatar who="sharma" size="sm" ringing={v > 0.4 && v < 0.85} />
-          <div className="min-w-0 flex-1 space-y-1.5 pb-5">
-            <Say v={win(v, 0.5)}>“आपका Hoodi वाला flat अभी available है?”</Say>
-            <Say v={win(v, 0.65)} tone="red" mine>“Already rented, ji.”</Say>
           </div>
         </In>
       </div>
@@ -166,18 +159,17 @@ const STEPS = [
   },
   {
     time: '4:00',
-    title: 'Pakka calls you back.',
-    text: 'With real answers, not guesses: which flat works, the rent, and when the owner can show it.',
+    title: 'Hear back in minutes.',
+    text: 'Which flat works, the rent, and when you can see it, all in one go.',
     scene: (v) => (
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
-          <Chip v={win(v, 0.05)} status="ok">PK-101 · dog OK</Chip>
-          <Chip v={win(v, 0.15)} status="rented">PK-102 · rented</Chip>
+          <Chip v={win(v, 0.05)} status="ok">Brookefield · dog OK</Chip>
         </div>
         <div className="flex items-end gap-3">
           <Avatar who="tenant" size="sm" ringing={v > 0.25 && v < 0.85} />
           <div className="min-w-0 flex-1 space-y-1.5 pb-5">
-            <Say v={win(v, 0.3)}><span className="font-semibold text-pakka-700">Pakka: </span>“Gowda's flat works. ₹23k, dog OK, Saturday 11. Book it?”</Say>
+            <Say v={win(v, 0.3)}><span className="font-semibold text-pakka-700">Pakka: </span>“The Brookefield flat works. ₹23k, dog OK, Saturday 11. Book it?”</Say>
             <Say v={win(v, 0.55)} tone="blue" mine>“Yes please!”</Say>
           </div>
         </div>
@@ -187,7 +179,7 @@ const STEPS = [
   {
     time: '4:40',
     title: 'Visit booked. Pakka.',
-    text: 'The listing is fresh again, and the rented one is hidden from everyone else.',
+    text: 'Meet the owner, see the flat, move in.',
     scene: (v) => (
       <In v={win(v, 0.1, 0.3)}>
         <div className="rotate-[-1.5deg] rounded-[20px] bg-white p-4 shadow-pop ring-1 ring-black/[.06]">

@@ -5,7 +5,7 @@ import { bolna } from '../lib/bolna.mjs';
 import { listCalls, publicListings } from './api.mjs';
 import { requestOwnerCheck } from './checks.mjs';
 import { randomUUID } from 'node:crypto';
-import { currentUser, endSession, sessionCookie, startSignIn, verifySignIn } from './auth.mjs';
+import { currentUser, endSession, findUser, profileComplete, saveProfile, sessionCookie, signInWithFirebase } from './auth.mjs';
 import { db, findListing, logEvent, save } from './store.mjs';
 import { isFresh, normalizePhone, rupees } from './util.mjs';
 
@@ -131,20 +131,13 @@ async function callFor(user, id) {
 
 export async function handlePortal(req, res, url, { send, readJson }) {
   const path = url.pathname;
-  // Dev-mode codes are shown only to requests from this machine itself (not Wi-Fi neighbours, not the tunnel).
-  const addr = req.socket.remoteAddress ?? '';
-  const local = !req.headers['cf-connecting-ip'] && /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(addr);
-
-  // ── Sign in ──
-  if (path === '/api/auth/start' && req.method === 'POST') {
-    const out = startSignIn(await readJson(req), { local });
-    return send(res, out.error ? 400 : 200, out);
-  }
-  if (path === '/api/auth/verify' && req.method === 'POST') {
-    const out = verifySignIn(await readJson(req));
+  // ── Sign in (Firebase ID token → our session cookie) ──
+  if (path === '/api/auth/firebase' && req.method === 'POST') {
+    const out = await signInWithFirebase(await readJson(req));
     if (out.error) return send(res, 400, out);
+    if (out.needsPhone) return send(res, 200, { needsPhone: true });
     res.setHeader('Set-Cookie', sessionCookie(req, out.token));
-    return send(res, 200, { ok: true, role: out.role });
+    return send(res, 200, { ok: true, role: out.role, needsProfile: out.needsProfile });
   }
   if (path === '/api/auth/logout' && req.method === 'POST') {
     endSession(req);
@@ -153,8 +146,28 @@ export async function handlePortal(req, res, url, { send, readJson }) {
   }
 
   const user = currentUser(req);
-  if (path === '/api/me' && req.method === 'GET') return send(res, 200, user ? { role: user.role, phone: user.phone } : { role: null });
+  if (path === '/api/me' && req.method === 'GET') {
+    if (!user) return send(res, 200, { role: null });
+    const account = findUser(user.uid);
+    const profile = account?.profiles?.[user.role] ?? null;
+    return send(res, 200, {
+      role: user.role,
+      phone: user.phone,
+      needsProfile: !profileComplete(account, user.role),
+      name: profile?.fullName ?? account?.googleName ?? null,
+      email: profile?.email ?? account?.email ?? null,
+      profile,
+    });
+  }
   if (!user) return send(res, 401, { error: 'Please sign in.' });
+
+  if (path === '/api/profile' && req.method === 'POST') {
+    const out = saveProfile(user, await readJson(req));
+    return send(res, out.error ? 400 : 200, out);
+  }
+
+  // Everything below needs a finished profile (name, email, consent), enforced here as well as in the UI.
+  if (!profileComplete(findUser(user.uid), user.role)) return send(res, 403, { error: 'Please finish your profile first.', needsProfile: true });
 
   // ── Calls (shared, ownership-checked) ──
   let m = path.match(/^\/api\/portal\/calls\/([\w-]+)(\/recording)?$/);
@@ -220,7 +233,7 @@ export async function handlePortal(req, res, url, { send, readJson }) {
     const l = findListing(m[1]);
     if (!l || l.status !== 'available' || l.isBroker) return send(res, 404, { error: 'This flat is no longer available.' });
     const body = await readJson(req);
-    const name = String(body.name ?? '').trim().slice(0, 40) || firstName(db.sessions.findLast?.((s) => s.tenantPhone === user.phone)?.tenantName) || 'there';
+    const name = firstName(findUser(user.uid)?.profiles?.tenant?.fullName) || 'there';
 
     if (m[2] === 'visit') {
       if (!isFresh(l.lastConfirmedAt) || !l.visitSlots.includes(body.slot)) return send(res, 409, { error: 'Pakka needs to re-confirm this flat first. Use "Ask Pakka" instead.' });
@@ -249,4 +262,4 @@ export async function handlePortal(req, res, url, { send, readJson }) {
   return send(res, 404, { error: 'Not found' });
 }
 
-export const PORTAL_PATHS = /^\/api\/(auth|me$|portal|owner|tenant)/;
+export const PORTAL_PATHS = /^\/api\/(auth|me$|profile$|portal|owner|tenant)/;

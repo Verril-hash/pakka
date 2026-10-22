@@ -100,7 +100,7 @@ export default function NewListing() {
       </div>
 
       <div className="sticky bottom-0 mt-6 flex items-center justify-between gap-4 border-t border-black/[.06] bg-canvas/95 py-4 backdrop-blur">
-        <p className="flex items-center gap-2 text-sm text-ink-500"><ShieldCheck size={16} className="text-emerald-600" />Saved as “Verified by Verril”</p>
+        <p className="flex items-center gap-2 text-sm text-ink-500"><ShieldCheck size={16} className="text-emerald-600" />Saved as “Verified by Pakka team”</p>
         <div className="flex gap-2">
           <Link to="/console/listings" className="btn-secondary">Cancel</Link>
           <button className="btn-primary" disabled={!ready || saving}>{saving ? 'Saving…' : 'Add listing'}</button>

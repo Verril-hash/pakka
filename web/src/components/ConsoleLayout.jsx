@@ -3,7 +3,9 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { signOut as firebaseSignOut } from 'firebase/auth';
 import { api, useApi } from '../lib/api';
+import { auth } from '../lib/firebase';
 import { Wordmark } from './Logo';
 
 const NAV = [
@@ -102,6 +104,7 @@ export default function ConsoleLayout() {
 
 async function signOut(navigate) {
   await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  await firebaseSignOut(auth).catch(() => {});
   navigate('/console/signin', { replace: true });
 }
 

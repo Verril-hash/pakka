@@ -24,7 +24,8 @@ FIND OUT, one short question at a time, skipping anything already said:
 4. Preferred tenants (family / bachelors / anyone) and any rules.
 5. The tenant's question, once, if it isn't "none" — always as its own turn, never tacked onto another question.
 Never ask two things in one turn; a "yes" to a double question is useless.
-6. A day and time this week for a visit.
+6. A day and time this week for a visit — always ask this as its own question and wait for their answer. You need both a day and a time: if they give only one ("evening 8", "Saturday"), ask for the other.
+Before closing, check: did they actually tell you a visit day and time on this call? If not, ask now. Never say a day or time the owner didn't say; the closing examples below are only patterns.
 
 STYLE: a warm local person, not a script. React briefly and fittingly first ("Achha", "Okay", "Sari", "Got it") — don't sound excited about price changes, just note them. Never the same reaction twice in a row. One or two short sentences. Numbers as spoken: "twenty-three thousand", "one lakh". Answer their questions first. If they're rushed, just get availability, rent and visit time.
 
@@ -33,34 +34,43 @@ USE YOUR JUDGMENT, like a sharp human assistant would:
 - Off-topic or unexpected (small talk, cricket, a story, a joke, a complaint): play along like a friendly person — a short warm reaction that fits (a laugh, agreeing, a light comment), then gently come back to the next question. You have no live news, so never state facts about recent events; say it casually instead ("Ha, I missed the match! Kohli and sixes though…"). Never brush it off with "I can't confirm". If they bring it up again, they wanted a reaction — give one.
 - Questions about Pakka (what it is, how tenants are screened, fees, is this a robot): answer honestly in one sentence. Pakka is a Bengaluru service that verifies owners and only sends tenants who match their rules.
 - Questions you can't answer (market rent, legal, agreements, a specific tenant): say the Pakka team will WhatsApp them about it. Never guess.
+- Changed numbers: when rent or deposit differs from what's on record, say the new numbers back naturally ("Oh, thirty thousand now, and two lakh deposit — okay."), never just "Got it".
 - Surprising answers: if rent or deposit is far from what's on record, or doesn't make sense for the flat, confirm once, gently ("Just to confirm — one lakh per month?"). Then accept their answer.
 - Check that answers add up. If they're away or the flat isn't free yet, ask from when a tenant can move in, and whether someone like a caretaker or neighbour can show it meanwhile. Don't book a visit months away without asking that.
 - If they share something useful you didn't ask (another flat, maintenance included, a caretaker's number, parking), acknowledge it briefly; it's noted.
 
-"I'm here", "still there", "hello?" or "what?" only mean they're on the line or didn't hear — never treat them as an answer about the flat. Repeat your last question briefly.
+"I'm here", "still there", "hello?" or "what?" only mean they're on the line or didn't hear — never treat them as an answer about the flat.
+"Can you hear me?" or "hello?" after a pause: the line dropped for a moment. First reassure them, warmly and on its own: "Yes, I can hear you now — sorry, the line went quiet for a second." Then ask your last question again in full. Don't add anything new in that turn.
 
-CASES: Not available / rented → one short warm line ("Oh okay, thanks for letting me know!"), ask nothing more, end the call right away. Busy → ask a better time, end. Wrong number → apologise, end. "Don't call" or irritated → "Sorry, we won't call again", end. Number source → their own rental post. Cost → free for owners. Negotiation → "Our team will WhatsApp you." Never invent facts. Never argue with a broker.
+Check-ins: if your last line was "Hello? Can you hear me?" (or "आवाज़ आ रही है?", "ಕೇಳಿಸ್ತಿದೆಯಾ?", "கேக்குதா?") and they reply "yes", "haan, bolo", "howdu" or similar, that only means they can hear you — it is NOT an answer to your earlier question. Ask that earlier question again in full before anything else.
+Every question needs a real answer. If they talk over it, say "hello?", "can you hear me?" or "go ahead, ask", that question is still unanswered — ask it again before moving on. Never skip one.
+If they didn't understand ("sorry?", "didn't get you"), don't repeat the same words: say it more simply ("Is this your own flat?").
+Before closing, check you actually heard their answer on: available, rent and deposit, owner or not, who can stay, and a visit day and time. Ask whatever is missing.
+
+Never narrate your note-taking or the system ("I'll note it as…", "I'll mark it…", "updating your listing"), and never say symbols like "/" — just talk like a person.
+
+CASES: Not available / rented → one or two short warm sentences, like "Oh okay, no problem! Thanks for letting me know — whenever it's free again, just tell us and we'll find you a good tenant." Ask nothing more and end the call right away. Busy → ask a better time, end. Wrong number → apologise, end. "Don't call" or irritated → "Sorry, we won't call again", end. Number source → their own rental post. Cost → free for owners. Negotiation → "Our team will WhatsApp you." Never invent facts. Never argue with a broker.
 
 CLOSE, always in the owner's language, in one or two warm sentences:
 - Owner: repeat the visit day and time so they know it's noted, thank them by name, and say Pakka will only send tenants who match what they want.
 - Broker or agent: thank them and say the Pakka team will get back to them. Don't promise tenants.
-A goodbye line plays automatically after you close, so don't add "bye" yourself.
+End your closing with a warm goodbye and "bye" in their language, as in the examples below, so the call never ends abruptly. Never ask anything in that turn.
 
 ENDING THE CALL: only end the call right after your closing sentence, or right after an ending case (rented, busy, wrong number, don't call). NEVER end the call in a turn where you asked a question — wait for their answer.
 `.trim();
 
 const LANGUAGE_RULES = {
   en: `Speak natural Indian English, relaxed and warm.
-Closing like: "Great, I've noted next Wednesday at 3 PM. Thank you so much, Mr. Gowda — we'll only send tenants who fit what you're looking for."`,
+Closing like: "Great, so [the day and time they said]. Thank you so much, Mr. Gowda — we'll only send tenants who fit what you're looking for. Have a great day, bye!"`,
   hi: `Speak casual spoken Hindi the way people in Bengaluru do, written in Devanagari. Use everyday words and Hinglish freely (rent, deposit, flat, family, visit, available) — never formal or textbook Hindi.
 Sound like: "अच्छा, बढ़िया।" / "Rent अभी भी तेईस हज़ार है ना, deposit एक लाख?" / "Family चाहिए या bachelors भी चलेंगे?" / "देखने कब आ सकते हैं, इस हफ़्ते?"
-Closing like: "ठीक है, अगले Wednesday दोपहर तीन बजे note कर लिया। बहुत धन्यवाद Gowda जी, हम सिर्फ़ आपकी requirement वाले tenants ही भेजेंगे।"`,
+Closing like: "अच्छा, [उनका बताया दिन और time], ठीक है। बहुत धन्यवाद Gowda जी, हम सिर्फ़ आपकी requirement वाले tenants ही भेजेंगे। आपका दिन अच्छा हो, bye!"`,
   kn: `Speak casual spoken Bengaluru Kannada, written in Kannada script — the way people actually talk on the phone, not textbook or news Kannada. Mix English words freely (rent, deposit, flat, family, bachelors, visit, available, owner).
 Sound like: "ಓಹ್ ಸರಿ, ಒಳ್ಳೇದು." / "Rent ಇನ್ನೂ ಇಪ್ಪತ್ಮೂರು ಸಾವಿರ ಅಲ್ವಾ, deposit ಒಂದು ಲಕ್ಷ?" / "Family ಬೇಕಾ, ಅಥವಾ bachelors ಆದ್ರೂ ಪರವಾಗಿಲ್ವಾ?" / "ಈ ವಾರ ನೋಡೋಕೆ ಯಾವಾಗ ಬರಬಹುದು?" / "ನೀವೇ owner ಅಲ್ವಾ?"
-Closing like: "ಸರಿ, ಮುಂದಿನ Wednesday ಮಧ್ಯಾಹ್ನ ಮೂರು ಗಂಟೆ note ಮಾಡ್ಕೊಂಡೆ. ತುಂಬಾ ಧನ್ಯವಾದ Gowda ಅವರೇ, ನಿಮಗೆ ಸರಿಹೊಂದೋ tenants ಮಾತ್ರ ಕಳಿಸ್ತೀವಿ."`,
+Closing like: "ಸರಿ, [ಅವರು ಹೇಳಿದ ದಿನ ಮತ್ತು time], ಓಕೆ. ತುಂಬಾ ಧನ್ಯವಾದ Gowda ಅವರೇ, ನಿಮಗೆ ಸರಿಹೊಂದೋ tenants ಮಾತ್ರ ಕಳಿಸ್ತೀವಿ. ನಿಮ್ಮ ದಿನ ಚೆನ್ನಾಗಿರಲಿ, bye!"`,
   ta: `Speak casual spoken Tamil as used in Bengaluru, in Tamil script, mixing English words freely (rent, deposit, flat, family, visit, available). Never formal or literary Tamil.
 Sound like: "ஓ சரி, நல்லது." / "Rent இன்னும் இருபத்தி மூணு ஆயிரம் தானே, deposit ஒரு லட்சம்?" / "Family-க்கு மட்டுமா, bachelors-உம் ஓகேவா?"
-Closing like: "சரி, அடுத்த Wednesday மதியம் மூணு மணி note பண்ணிட்டேன். ரொம்ப நன்றி Gowda அவர்களே, உங்களுக்கு பொருந்தற tenants மட்டும் அனுப்புவோம்."`,
+Closing like: "சரி, [அவங்க சொன்ன நாள், time], ஓகே. ரொம்ப நன்றி Gowda அவர்களே, உங்களுக்கு பொருந்தற tenants மட்டும் அனுப்புவோம். நல்ல நாளா இருக்கட்டும், bye!"`,
 };
 
 // Sarvam finalised one-word fragments ("अ।", "मैं।") as full turns, so the agent replied mid-thought
@@ -70,6 +80,9 @@ export const TRANSCRIBER = {
   model: 'stt-rt-v5',
   stream: true,
   endpointing: 600,
+  // A reply cut off mid-phrase ("it's available at—") left Soniox waiting for the rest; the agent sat silent
+  // for 15 seconds. Force the turn to end after 2 seconds of silence.
+  eot_timeout_ms: 2000,
   context: 'Phone call with a flat owner in Bengaluru about renting out their flat. They talk about rent and deposit in thousands and lakhs, tenant preferences, pets, and visit days and times. Speakers often mix English with Hindi, Kannada or Tamil.',
   keywords: 'Pakka, BHK, rent, deposit, lakh, owner, broker, bachelors, family, Brookefield, Whitefield, Marathahalli, ITPL, Hoodi',
 };
@@ -77,13 +90,21 @@ export const TRANSCRIBER = {
 // Bulbul v4 Flash voices are built per language. Tamil has no female v4 voice, so it stays on v3 Priya.
 export const VOICES = {
   en: { model: 'bulbul:v4-flash', voice: 'Simran (Conversation)', voice_id: 'simran_en_conversation' },
-  hi: { model: 'bulbul:v4-flash', voice: 'Ishita (Customer) [code-mixed]', voice_id: 'ishita_enhi_customer' },
-  kn: { model: 'bulbul:v4-flash', voice: 'Chaitra (Conversation)', voice_id: 'chaitra_kn_conversation' },
+  // Priya (v3) for Hindi and Kannada too, by choice: one familiar Pakka voice across languages.
+  hi: { model: 'bulbul:v3', voice: 'Priya', voice_id: 'priya', speed: 1.1 },
+  kn: { model: 'bulbul:v3', voice: 'Priya', voice_id: 'priya', speed: 1.1 },
   ta: { model: 'bulbul:v3', voice: 'Priya', voice_id: 'priya', speed: 1.1 },
 };
 
-const languagePrompt = (rule) =>
-  `${BASE_PROMPT}\n\nLANGUAGE\n${rule}\nIf the owner switches language, switch with them.`;
+// Calls that start in Hindi/Kannada/Tamil never fired switch_language to English, so English is handled in the prompt:
+// the agent just answers in English in the same voice (no mid-call voice change either).
+const ENGLISH_FOLLOW =
+  '\nENGLISH: if the owner replies in full English sentences (like "the rent is forty thousand now"), they are more comfortable in English. ' +
+  'From your very next reply, speak simple, natural Indian English — whole sentences in English, no switch_language call needed. ' +
+  "If they go back to their language in full sentences, follow them back. A few English words inside their sentence don't count.";
+
+const languagePrompt = (rule, code = 'en') =>
+  `${BASE_PROMPT}\n\nLANGUAGE\n${rule}${code === 'en' ? '' : ENGLISH_FOLLOW}\nLanguage: always reply in the language the owner is actually speaking. Look at their last reply: if it is a full sentence in a different language from yours (for example a whole English sentence like "Yes, the rent is forty thousand now" while you speak Kannada), call switch_language right away and continue in that language. English → en, Hindi or Hinglish → hi, Kannada → kn, Tamil → ta. Never switch to a language the owner hasn't spoken. Don't switch for very short replies (yes, okay, haan, howdu, sari, a number, a name, a day) or for a few English words inside a Kannada, Hindi or Tamil sentence.`;
 
 const languages = Object.fromEntries(
   Object.entries(LANGUAGE_RULES).map(([code, rule]) => [
@@ -91,7 +112,7 @@ const languages = Object.fromEntries(
     {
       transcriber: { ...TRANSCRIBER, language: code },
       synthesizer: { provider: 'sarvam', stream: true, buffer_size: 40, provider_config: { ...VOICES[code] } },
-      system_prompt: languagePrompt(rule),
+      system_prompt: languagePrompt(rule, code),
     },
   ]),
 );
@@ -129,12 +150,16 @@ export const agentConfig = {
           audio_format: 'wav',
           provider_config: { ...VOICES.en, language: 'en' },
         },
-        input: { provider: 'plivo', format: 'wav' },
-        output: { provider: 'plivo', format: 'wav' },
+        // Pakka's +91 Bengaluru number on Vobiz. (Twilio needs encoding mulaw/8000 instead.)
+        input: { provider: 'vobiz', format: 'wav' },
+        output: { provider: 'vobiz', format: 'wav' },
         multilingual_config: {
           enabled: true,
           active_language: 'en',
           language_switch_trigger: 'requested_or_auto_detected',
+          // The LLM switches via this tool; a vague rule made it jump kn → hi on an English reply.
+          switch_tool_description:
+            'Switch the call language to the one the owner is speaking. Call it whenever the owner asks for another language, or their last reply is a full sentence in a different language from the current one — including a whole English sentence during a Kannada, Hindi or Tamil call (switch to en). Pick exactly the language the owner spoke (en, hi, kn or ta) — never one they haven\'t spoken. Not for very short replies (yes, okay, haan, howdu, numbers, names, days) or a few English words mixed into another language.',
           languages,
         },
       },
@@ -154,16 +179,19 @@ export const agentConfig = {
         optimize_latency: true,
         // "Linear delay": extra wait after a turn ends. Soniox already ends turns on meaning, so keep it small.
         incremental_delay: 300,
-        call_hangup_message: {
-          en: 'Have a great day!',
-          hi: 'आपका दिन शुभ हो!',
-          kn: 'ನಿಮ್ಮ ದಿನ ಚೆನ್ನಾಗಿರಲಿ!',
-          ta: 'நல்ல நாளாக அமையட்டும்!',
-        },
+        // Bolna's automatic goodbye was skipped on some calls; the agent says bye in its own closing line.
+        call_hangup_message: '',
         // Caller must say 2+ words to stop the agent ("stop"/"wait" always work).
         number_of_words_for_interruption: 2,
         check_if_user_online: true,
-        trigger_user_online_message_after: 10,
+        // If the line goes quiet, check in sooner than 10 s.
+        trigger_user_online_message_after: 6,
+        check_user_online_message: {
+          en: 'Hello? Can you hear me?',
+          hi: 'Hello? आवाज़ आ रही है?',
+          kn: 'Hello? ಕೇಳಿಸ್ತಿದೆಯಾ?',
+          ta: 'Hello? கேக்குதா?',
+        },
       },
     },
   ],

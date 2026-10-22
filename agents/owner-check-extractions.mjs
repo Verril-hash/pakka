@@ -33,14 +33,14 @@ export const dispositions = [
   },
   {
     name: 'rent',
-    question: 'What monthly rent in rupees did the person confirm or state? Give only the number, e.g. 23000. Empty if not stated.',
+    question: 'What monthly rent in rupees did the person clearly confirm or state in reply to the rent question? Give only the number, e.g. 23000. The agent reading out a figure does not count: if the person never actually answered about rent (talked over it, said hello, moved on), leave it empty.',
     is_subjective: true,
     is_objective: false,
     subjective_type: 'numeric',
   },
   {
     name: 'deposit',
-    question: 'What security deposit in rupees did the person confirm or state? Give only the number, e.g. 100000 for one lakh. Empty if not stated.',
+    question: 'What security deposit in rupees did the person clearly confirm or state in reply to the deposit question? Give only the number, e.g. 100000 for one lakh. The agent reading out a figure does not count: if the person never actually answered about the deposit, leave it empty.',
     is_subjective: true,
     is_objective: false,
     subjective_type: 'numeric',

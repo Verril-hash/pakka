@@ -142,7 +142,7 @@ export default function OwnerHome() {
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-[22px] bg-white p-5 shadow-card">
           <div className="max-w-[560px]">
             <p className="text-[15px] font-semibold text-ink-900">{data.paused ? 'Paused' : 'On'} · in <LangBadge code={data.language} /></p>
-            <p className="mt-1 text-[13px] leading-relaxed text-ink-500">A short call every few days to confirm your flat is still available and the details are right. Pakka's assistant always says it's an AI. You never pay anything.</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-ink-500">A short call every few days to confirm your flat is still available and the details are right. Pakka's assistant always says it's an AI. Listing is free; you pay only when Pakka finds your tenant.</p>
           </div>
           <button onClick={() => act('/api/owner/calls-paused', { paused: !data.paused })} disabled={busy} className={data.paused ? 'btn-primary' : 'btn-secondary'}>
             {data.paused ? 'Resume calls' : 'Pause calls'}

@@ -23,6 +23,7 @@ const listing = {
 const res = await bolna('POST', '/call', {
   agent_id: agentId,
   recipient_phone_number: phone,
+  ...(process.env.PAKKA_FROM_NUMBER ? { from_phone_number: process.env.PAKKA_FROM_NUMBER } : {}),
   agent_data: { language: lang },
   user_data: { ...listing, greeting: greeting(lang, listing) },
 });

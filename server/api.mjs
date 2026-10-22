@@ -196,7 +196,7 @@ function addListing(body) {
     visitSlots: body.visitSlot ? [body.visitSlot] : [],
     status: 'available',
     isBroker: false,
-    verifiedBy: body.verifiedBy || 'Verril',
+    verifiedBy: 'Pakka team',
     verifiedAt: new Date().toISOString(),
     lastConfirmedAt: new Date().toISOString(),
     lastCallAt: null,

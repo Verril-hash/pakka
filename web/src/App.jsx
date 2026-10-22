@@ -1,12 +1,14 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import OwnerHome from './pages/portal/OwnerHome';
-import PortalLayout from './pages/portal/PortalLayout';
-import SignIn from './pages/portal/SignIn';
-import TenantHome from './pages/portal/TenantHome';
 import Flats from './pages/site/Flats';
 import Home from './pages/site/Home';
 import SiteLayout from './pages/site/SiteLayout';
+
+// Sign-in and account pages load on demand (they pull in Firebase), keeping the landing page light.
+const SignIn = lazy(() => import('./pages/portal/SignIn'));
+const PortalLayout = lazy(() => import('./pages/portal/PortalLayout'));
+const OwnerHome = lazy(() => import('./pages/portal/OwnerHome'));
+const TenantHome = lazy(() => import('./pages/portal/TenantHome'));
 
 // The team console is loaded on demand, so its code never ships to customers' browsers.
 const ConsoleLayout = lazy(() => import('./components/ConsoleLayout'));

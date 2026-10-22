@@ -21,6 +21,7 @@ You are Pakka, an AI rental assistant, a woman, on a phone call with someone loo
 Pakka only lists flats whose owners the Pakka team has verified in person, starting with the Whitefield area (ITPL, Brookefield, Hoodi, Kundalahalli, Marathahalli). It's free for tenants. Pakka never shares owner phone numbers; it arranges visits itself.
 
 CALL DETAILS: mode = {mode}. Tenant: {tenant_name}, phone {tenant_phone}.
+If mode is empty, the tenant called Pakka themselves: treat it as "intake". Their phone number is {{from_number}}; use it for functions and never ask for it. Ask their first name early, naturally, and use it for tenant_name.
 
 IF MODE IS "intake":
 1. Find out what they need, one short question at a time, only what's missing: area, BHK, max budget, who will stay (family / bachelors), when they want to move in, and must-haves like pets or parking.
@@ -36,6 +37,9 @@ The tenant wanted: {requirement}
 Lead with the best option: whether it's still available, rent, the answer to their question, and when the owner can show it. In one line, say what happened with the other flat. Offer the visit; if they agree, call book_visit. If nothing worked out, apologise briefly and say Pakka will keep looking.
 
 STYLE: a warm, sharp local assistant, not a script. React briefly first ("Achha", "Okay", "Got it"), never the same twice in a row. One or two short sentences per turn, one question at a time. Numbers as spoken: "twenty-three thousand", "one lakh".
+"Can you hear me?" or "hello?" after a pause: the line dropped for a moment. First reassure them, warmly and on its own: "Yes, I can hear you now — sorry, the line went quiet for a second." Then repeat your last question in full. Don't add anything new in that turn.
+If they didn't understand ("sorry?", "didn't get you"), say it more simply instead of repeating the same words.
+Check-ins: if your last line was "Hello? Can you hear me?" (or "आवाज़ आ रही है?", "ಕೇಳಿಸ್ತಿದೆಯಾ?", "கேக்குதா?") and they reply "yes", "haan, bolo", "howdu" or similar, that only means they can hear you — it is NOT an answer to your earlier question. Ask that earlier question again in full before anything else.
 
 USE YOUR JUDGMENT:
 - Respond to what they actually said. Off-topic or small talk: one warm, fitting line, then back on track. You have no live news, so never state facts about recent events.
@@ -43,7 +47,7 @@ USE YOUR JUDGMENT:
 - If their budget or wish doesn't fit the area (e.g. 3 BHK for ten thousand), say gently what's realistic in one line.
 - Questions you can't answer (legal, agreements, exact address before booking) → the Pakka team will WhatsApp them.
 
-CLOSE in the tenant's language, warmly, in one or two sentences: confirm what happens next (visit time, or that you'll call back in a few minutes). A goodbye line plays automatically after you close.
+CLOSE in the tenant's language, warmly, in one or two sentences: confirm what happens next (visit time, or that you'll call back in a few minutes). End it with a warm goodbye and "bye" in their language ("Talk soon, bye!"), so the call never ends abruptly. Never ask anything in that turn.
 ENDING THE CALL: only end right after your closing sentence. NEVER end the call in a turn where you asked a question, and never right after calling a function — tell them the result first.
 `.trim();
 
@@ -57,8 +61,15 @@ Sound like: "ಸರಿ, ಎಷ್ಟು BHK ಬೇಕು?" / "Budget ಎಷ್�
 Sound like: "சரி, எத்தனை BHK வேணும்?" / "Budget எவ்வளவு?" / "நான் இப்போ owners கிட்ட பேசிட்டு அஞ்சு நிமிஷத்துல call back பண்றேன்."`,
 };
 
-const languagePrompt = (rule) =>
-  `${BASE_PROMPT}\n\nLANGUAGE\n${rule}\nIf the tenant switches language, switch with them.`;
+// Calls that start in Hindi/Kannada/Tamil never fired switch_language to English, so English is handled in the prompt:
+// the agent just answers in English in the same voice (no mid-call voice change either).
+const ENGLISH_FOLLOW =
+  '\nENGLISH: if the tenant replies in full English sentences (like "I need a 2 BHK near ITPL"), they are more comfortable in English. ' +
+  'From your very next reply, speak simple, natural Indian English — whole sentences in English, no switch_language call needed. ' +
+  "If they go back to their language in full sentences, follow them back. A few English words inside their sentence don't count.";
+
+const languagePrompt = (rule, code = 'en') =>
+  `${BASE_PROMPT}\n\nLANGUAGE\n${rule}${code === 'en' ? '' : ENGLISH_FOLLOW}\nLanguage: always reply in the language the tenant is actually speaking. Look at their last reply: if it is a full sentence in a different language from yours (for example a whole English sentence like "I need a 2 BHK near ITPL" while you speak Kannada), call switch_language right away and continue in that language. English → en, Hindi or Hinglish → hi, Kannada → kn, Tamil → ta. Never switch to a language the tenant hasn't spoken. Don't switch for very short replies (yes, okay, haan, howdu, sari, a number, a name, a day) or for a few English words inside a Kannada, Hindi or Tamil sentence.`;
 
 const TENANT_TRANSCRIBER = {
   ...TRANSCRIBER,
@@ -74,7 +85,7 @@ const languages = Object.fromEntries(
     {
       transcriber: { ...TENANT_TRANSCRIBER, language: code },
       synthesizer: { provider: 'sarvam', stream: true, buffer_size: 40, provider_config: { ...VOICES[code] } },
-      system_prompt: languagePrompt(rule),
+      system_prompt: languagePrompt(rule, code),
     },
   ]),
 );
@@ -99,7 +110,7 @@ const TOOLS = [
         tenant_type: str('"family", "bachelors" or "any"'),
         needs: str('Must-haves in short English, e.g. "has a small dog, car parking". If they said they have no pet, write "no pet". Empty if none.'),
         move_in: str('When they want to move in, short English. Empty if not said.'),
-        tenant_phone: str("The tenant's phone number"),
+        tenant_phone: str("The tenant's phone number from CALL DETAILS. Never ask the tenant for it."),
       },
       required: ['area'],
     },
@@ -117,7 +128,7 @@ const TOOLS = [
         question: str('The tenant\'s question for the owner in short English, e.g. "Is a small dog okay?". Empty if none.'),
         requirement: str('One line summary of what the tenant wants, e.g. "2 BHK near ITPL under 25k, family, small dog, move in December"'),
         tenant_name: str("The tenant's name"),
-        tenant_phone: str("The tenant's phone number"),
+        tenant_phone: str("The tenant's phone number from CALL DETAILS. Never ask the tenant for it."),
         tenant_language: str('Language the tenant is speaking: en, hi, kn or ta'),
       },
       required: ['listing_ids', 'requirement', 'tenant_phone', 'tenant_language'],
@@ -133,7 +144,7 @@ const TOOLS = [
         listing_id: str('Listing id of the flat'),
         slot: str('Agreed day and time in short English, e.g. "Wednesday 6 PM"'),
         tenant_name: str("The tenant's name"),
-        tenant_phone: str("The tenant's phone number"),
+        tenant_phone: str("The tenant's phone number from CALL DETAILS. Never ask the tenant for it."),
       },
       required: ['listing_id', 'slot', 'tenant_phone'],
     },
@@ -168,7 +179,8 @@ export function assertReady() {
 
 export const agentConfig = {
   agent_name: agentName,
-  agent_welcome_message: '{greeting}',
+  // Incoming calls send no variables ({greeting} renders empty), so the fixed part must stand on its own.
+  agent_welcome_message: "Hi, this is Pakka, your AI rental assistant. {greeting}",
   tasks: [
     {
       task_type: 'conversation',
@@ -195,13 +207,17 @@ export const agentConfig = {
           audio_format: 'wav',
           provider_config: { ...VOICES.en, language: 'en' },
         },
-        input: { provider: 'plivo', format: 'wav' },
-        output: { provider: 'plivo', format: 'wav' },
+        // Pakka's +91 Bengaluru number on Vobiz. (Twilio needs encoding mulaw/8000 instead.)
+        input: { provider: 'vobiz', format: 'wav' },
+        output: { provider: 'vobiz', format: 'wav' },
         api_tools: apiTools,
         multilingual_config: {
           enabled: true,
           active_language: 'en',
           language_switch_trigger: 'requested_or_auto_detected',
+          // The LLM switches via this tool; a vague rule made it jump kn → hi on an English reply.
+          switch_tool_description:
+            'Switch the call language to the one the tenant is speaking. Call it whenever the tenant asks for another language, or their last reply is a full sentence in a different language from the current one — including a whole English sentence during a Kannada, Hindi or Tamil call (switch to en). Pick exactly the language the tenant spoke (en, hi, kn or ta) — never one they haven\'t spoken. Not for very short replies (yes, okay, haan, howdu, numbers, names, days) or a few English words mixed into another language.',
           languages,
         },
       },
@@ -218,14 +234,17 @@ export const agentConfig = {
         optimize_latency: true,
         incremental_delay: 300,
         number_of_words_for_interruption: 2,
-        call_hangup_message: {
-          en: 'Talk soon!',
-          hi: 'फिर बात करते हैं!',
-          kn: 'ಮತ್ತೆ ಮಾತಾಡೋಣ!',
-          ta: 'மறுபடி பேசலாம்!',
-        },
+        // Bolna's automatic goodbye was skipped on some calls; the agent says bye in its own closing line.
+        call_hangup_message: '',
         check_if_user_online: true,
-        trigger_user_online_message_after: 10,
+        // If the line goes quiet, check in sooner than 10 s.
+        trigger_user_online_message_after: 6,
+        check_user_online_message: {
+          en: 'Hello? Can you hear me?',
+          hi: 'Hello? आवाज़ आ रही है?',
+          kn: 'Hello? ಕೇಳಿಸ್ತಿದೆಯಾ?',
+          ta: 'Hello? கேக்குதா?',
+        },
       },
     },
   ],
@@ -233,20 +252,20 @@ export const agentConfig = {
 
 export const agentPrompts = { task_1: { system_prompt: languagePrompt(LANGUAGE_RULES.en) } };
 
-/** Opening lines. Outbound intake is for testing until Pakka has an inbound number. */
+/** Second half of the opening line on outgoing calls (the welcome message already says "Hi, this is Pakka…"). */
 export function greeting(mode, lang, { tenant_name }) {
   const lines = {
     intake: {
-      en: `Hi ${tenant_name}, this is Pakka, your AI rental assistant. You were looking for a flat around Whitefield — what kind of place do you need?`,
-      hi: `Hi ${tenant_name}, मैं Pakka हूँ, आपकी AI rental assistant। आप Whitefield के आसपास flat ढूँढ रहे थे — कैसा flat चाहिए?`,
-      kn: `Hi ${tenant_name}, ನಾನು Pakka, ನಿಮ್ಮ AI rental assistant. Whitefield ಹತ್ರ flat ಹುಡುಕ್ತಿದ್ರಿ ಅಲ್ವಾ — ಎಂಥಾ flat ಬೇಕು?`,
-      ta: `Hi ${tenant_name}, நான் Pakka, உங்க AI rental assistant. Whitefield பக்கத்துல flat தேடிட்டு இருந்தீங்க — எப்படி flat வேணும்?`,
+      en: `${tenant_name}, you were looking for a flat around Whitefield — what kind of place do you need?`,
+      hi: `${tenant_name}, आप Whitefield के आसपास flat ढूँढ रहे थे — कैसा flat चाहिए?`,
+      kn: `${tenant_name}, Whitefield ಹತ್ರ flat ಹುಡುಕ್ತಿದ್ರಿ ಅಲ್ವಾ — ಎಂಥಾ flat ಬೇಕು?`,
+      ta: `${tenant_name}, Whitefield பக்கத்துல flat தேடிட்டு இருந்தீங்க — எப்படி flat வேணும்?`,
     },
     callback: {
-      en: `Hi ${tenant_name}, it's Pakka again. I just spoke to the owners — have a minute?`,
-      hi: `Hi ${tenant_name}, मैं Pakka फिर से। मैंने अभी owners से बात कर ली — एक minute है?`,
-      kn: `Hi ${tenant_name}, ನಾನು Pakka ಮತ್ತೆ. ಈಗಷ್ಟೇ owners ಜೊತೆ ಮಾತಾಡ್ದೆ — ಒಂದು ನಿಮಿಷ ಇದೆಯಾ?`,
-      ta: `Hi ${tenant_name}, நான் Pakka மறுபடியும். இப்போதான் owners கிட்ட பேசினேன் — ஒரு நிமிஷம் இருக்கா?`,
+      en: `${tenant_name}, I just spoke to the owners — have a minute?`,
+      hi: `${tenant_name}, मैंने अभी owners से बात कर ली — एक minute है?`,
+      kn: `${tenant_name}, ಈಗಷ್ಟೇ owners ಜೊತೆ ಮಾತಾಡ್ದೆ — ಒಂದು ನಿಮಿಷ ಇದೆಯಾ?`,
+      ta: `${tenant_name}, இப்போதான் owners கிட்ட பேசினேன் — ஒரு நிமிஷம் இருக்கா?`,
     },
   };
   return lines[mode][lang] ?? lines[mode].en;

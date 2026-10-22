@@ -136,7 +136,7 @@ export default function TenantHome() {
 
       <div className="mt-12 rounded-[24px] bg-dark-card p-6 text-white md:p-8">
         <p className="text-[22px] font-semibold tracking-display">Looking for something else?</p>
-        <p className="mt-1 text-[15px] text-ink-400">Pakka never shares owners' numbers and never charges brokerage.</p>
+        <p className="mt-1 text-[15px] text-ink-400">Free for tenants, always. Pakka arranges every visit for you.</p>
         <Link to="/#call" className="btn mt-5 h-11 bg-white px-5 text-ink-900 hover:bg-white/90"><PhoneCall size={16} />Get a call from Pakka</Link>
       </div>
 

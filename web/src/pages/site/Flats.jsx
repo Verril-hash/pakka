@@ -86,8 +86,8 @@ export default function Flats() {
   return (
     <main className="bg-canvas">
       <section className="mx-auto max-w-[1080px] px-5 pb-10 pt-14 md:pt-20">
-        <h1 className="text-[48px] font-semibold leading-none tracking-tightest md:text-[72px]">Verified flats.</h1>
-        <p className="mt-3 text-[24px] font-semibold tracking-display text-ink-400 md:text-[32px]">Whitefield. Every one checked in person.</p>
+        <h1 className="text-[48px] font-semibold leading-none tracking-tightest md:text-[72px]">Flats from owners.</h1>
+        <p className="mt-3 text-[24px] font-semibold tracking-display text-ink-400 md:text-[32px]">Whitefield, Bengaluru. Zero brokerage.</p>
 
         {role === null && (
           <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-[22px] bg-white px-5 py-4 shadow-card">
@@ -131,10 +131,10 @@ export default function Flats() {
                 {!l.approximate && l.landmark && <p className="mt-2 flex items-center gap-1.5 text-[14px] font-medium text-ink-900"><MapPin size={14} className="text-brand-600" />{l.landmark}</p>}
 
                 <div className="mt-5 space-y-2">
-                  <p className="flex items-center gap-2 text-[13px] font-medium text-pakka-700"><ShieldCheck size={15} />Verified in person by Pakka</p>
+                  <p className="flex items-center gap-2 text-[13px] font-medium text-pakka-700"><ShieldCheck size={15} />Direct from owner</p>
                   {l.lastCallAt && (
                     <p className={`flex items-center gap-2 text-[13px] font-medium ${isFresh(l.lastCallAt) ? 'text-brand-700' : 'text-ink-500'}`}>
-                      <PhoneCall size={14} />Owner confirmed on a call {ago(l.lastCallAt)}
+                      <PhoneCall size={14} />Available · updated {ago(l.lastCallAt)}
                     </p>
                   )}
                 </div>
@@ -163,7 +163,7 @@ export default function Flats() {
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <p className="mb-4 text-[24px] font-semibold leading-tight tracking-display">Don't see the one?<br /><span className="text-ink-400">Ask Pakka.</span></p>
           <CallMeForm />
-          <p className="mt-4 px-1 text-[13px] leading-relaxed text-ink-500">Pakka can check anything that isn't listed, like pets, parking or move-in dates, with the owner, then call you back.</p>
+          <p className="mt-4 px-1 text-[13px] leading-relaxed text-ink-500">Questions about a flat, like pets, parking or move-in dates? Pakka gets you the answer from the owner.</p>
         </aside>
       </section>
     </main>

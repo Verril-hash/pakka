@@ -262,6 +262,7 @@ async function callOwner(listing, question) {
   const res = await bolna('POST', '/call', {
     agent_id: CHECK_AGENT,
     recipient_phone_number: listing.ownerPhone,
+    ...(process.env.PAKKA_FROM_NUMBER ? { from_phone_number: process.env.PAKKA_FROM_NUMBER } : {}),
     agent_data: { language: lang },
     user_data: { ...vars, greeting: ownerGreeting(lang, vars) },
   });
@@ -288,6 +289,7 @@ export async function startTenantCall({ mode, phone, name, lang, requirement = '
   const res = await bolna('POST', '/call', {
     agent_id: LINE_AGENT,
     recipient_phone_number: normalizePhone(phone),
+    ...(process.env.PAKKA_FROM_NUMBER ? { from_phone_number: process.env.PAKKA_FROM_NUMBER } : {}),
     agent_data: { language: lang },
     user_data: {
       mode,

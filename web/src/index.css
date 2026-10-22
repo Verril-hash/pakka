@@ -8,6 +8,9 @@
   h1, h2, h3 { @apply font-display; }
   .tnum { font-variant-numeric: tabular-nums; }
   ::selection { background: #b3f9ff; }
+  /* Focus ring for keyboard users only; no outline after a tap or click. */
+  :focus:not(:focus-visible) { outline: none; }
+  button:focus-visible, a:focus-visible { outline: 2px solid #0a5cc4; outline-offset: 2px; }
 }
 
 @layer components {

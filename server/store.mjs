@@ -19,14 +19,14 @@ function seed() {
     ownerPhone: resolveEnv(l.ownerPhone),
     status: 'available',
     isBroker: false,
-    verifiedBy: 'Verril',
+    verifiedBy: 'Pakka team',
     verifiedAt: new Date(Date.now() - lastConfirmedDaysAgo * DAY).toISOString(),
     lastConfirmedAt: new Date(Date.now() - lastConfirmedDaysAgo * DAY).toISOString(),
     lastCallAt: null,
     notes: [],
     history: [],
   }));
-  return { listings, sessions: [], visits: [], doNotCall: [], events: [] };
+  return { listings, sessions: [], visits: [], doNotCall: [], events: [], users: [] };
 }
 
 export const db = existsSync(DB_PATH) ? JSON.parse(readFileSync(DB_PATH, 'utf8')) : seed();
@@ -34,8 +34,9 @@ export const db = existsSync(DB_PATH) ? JSON.parse(readFileSync(DB_PATH, 'utf8')
 /** Back to the seed listings, in place, so every module keeps the same `db` reference. */
 export function resetDb() {
   const fresh = seed();
+  const users = db.users ?? []; // accounts are real people: a demo reset never deletes them
   for (const key of Object.keys(db)) delete db[key];
-  Object.assign(db, fresh);
+  Object.assign(db, fresh, { users });
   save();
 }
 

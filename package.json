@@ -12,9 +12,13 @@
     "extractions:sync": "node --env-file=.env scripts/sync-extractions.mjs",
     "call:test": "node --env-file=.env scripts/test-call.mjs",
     "web:dev": "npm --prefix web run dev",
-    "web:build": "npm --prefix web run build"
+    "web:build": "npm --prefix web run build",
+    "inbound:link": "node --env-file=.env scripts/link-inbound.mjs"
   },
   "engines": {
     "node": ">=22"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
   }
 }

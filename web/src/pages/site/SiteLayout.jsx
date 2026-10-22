@@ -7,7 +7,7 @@ const NAV = [
   ['/flats', 'Flats'],
   ['/#how', 'How it works'],
   ['/#owners', 'For owners'],
-  ['/#trust', 'Trust'],
+  ['/#why', 'Why Pakka'],
 ];
 
 export default function SiteLayout() {
@@ -60,11 +60,11 @@ export default function SiteLayout() {
         <div className="mx-auto max-w-[1080px] px-5 py-10 text-[12px] text-ink-500">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
             <Wordmark />
-            <p className="text-[14px] text-ink-500">Every listing, verified by a call.</p>
+            <p className="text-[14px] text-ink-500">Rent straight from owners.</p>
           </div>
           <p className="border-b border-black/[.08] pb-4 leading-relaxed">
-            Pakka is available in Whitefield, Bengaluru. Every call from Pakka begins by saying it's an AI assistant. Owners can opt out at any time by saying “don't call me”.
-            Pakka never charges tenants or owners a brokerage fee.
+            Zero brokerage for tenants. Owners list for free and pay only when Pakka finds their tenant. Pakka's phone assistant is an AI and says so at the start of every call.
+            Your phone number stays private.
           </p>
           <div className="grid gap-6 py-6 sm:grid-cols-3">
             <div>
@@ -73,7 +73,7 @@ export default function SiteLayout() {
             </div>
             <div>
               <p className="mb-2 font-semibold text-ink-900">Owners</p>
-              <ul className="space-y-1.5"><li><a href="/#owners" className="hover:underline">List your flat</a></li><li><a href="/#trust" className="hover:underline">How calls work</a></li></ul>
+              <ul className="space-y-1.5"><li><a href="/#owners" className="hover:underline">List your flat</a></li><li><Link to="/signin?as=owner" className="hover:underline">Owner sign in</Link></li></ul>
             </div>
             <div>
               <p className="mb-2 font-semibold text-ink-900">Pakka</p>
