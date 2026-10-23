@@ -19,6 +19,7 @@ const LANGS = new Set(['en', 'hi', 'kn', 'ta']);
 const FAILED = new Set(['no-answer', 'busy', 'failed', 'canceled', 'cancelled', 'error', 'stopped', 'balance-low']);
 // Extractions land a little after the call completes; give up waiting after this long.
 const EXTRACTION_WAIT_MS = 90_000;
+const MAX_START_ATTEMPTS = 3;
 
 // ── Starting a check (called from the request_owner_check tool) ───────────────
 
@@ -115,7 +116,18 @@ async function advanceCheck(session, check) {
     }
     // One owner can hold several flats; never ring the same phone twice at once.
     if (ownerBusy(listing.ownerPhone)) return;
-    check.executionId = await callOwner(listing, session.question);
+    // A call Bolna refuses (bad number, carrier down) is retried a few times, then given up, never every tick forever.
+    try {
+      check.executionId = await callOwner(listing, session.question);
+    } catch (err) {
+      check.attempts = (check.attempts ?? 0) + 1;
+      check.lastError = err.message.slice(0, 300);
+      if (check.attempts >= MAX_START_ATTEMPTS) {
+        check.state = 'unreachable';
+        logEvent('call_failed', `Couldn't start the call to ${listing.ownerName} about ${listing.id}: ${check.lastError}`, { listingId: listing.id });
+      }
+      return;
+    }
     check.state = 'calling';
     logEvent('owner_call', `Calling ${listing.ownerName} (${listing.ownerLanguage}) about ${listing.id}`, {
       sessionId: session.id,
@@ -231,7 +243,17 @@ async function advanceSession(session) {
   }
 
   if (session.state === 'checking' && !pending) {
-    session.callbackExecutionId = await callTenantBack(session);
+    try {
+      session.callbackExecutionId = await callTenantBack(session);
+    } catch (err) {
+      session.callbackAttempts = (session.callbackAttempts ?? 0) + 1;
+      session.lastError = err.message.slice(0, 300);
+      if (session.callbackAttempts >= MAX_START_ATTEMPTS) {
+        session.state = 'done';
+        logEvent('call_failed', `Couldn't start the callback to ${session.tenantName}: ${session.lastError}`, { sessionId: session.id });
+      }
+      return;
+    }
     session.state = 'calling_back';
     logEvent('tenant_callback', `Calling ${session.tenantName} back with the owners' answers`, { sessionId: session.id });
     return;

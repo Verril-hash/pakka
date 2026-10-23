@@ -247,7 +247,13 @@ export async function requestCallback({ name, phone, language }) {
   callbackLog.push(now);
   const lang = ['en', 'hi', 'kn', 'ta'].includes(language) ? language : 'en';
   const tenantName = String(name ?? '').trim().slice(0, 40) || 'there';
-  await startTenantCall({ mode: 'intake', phone: to, name: tenantName, lang });
+  try {
+    await startTenantCall({ mode: 'intake', phone: to, name: tenantName, lang });
+  } catch (err) {
+    recentCallbacks.set(to, mine); // a call that never started doesn't count against their limit
+    logEvent('call_failed', `Couldn't start the web call to ${tenantName}: ${err.message.slice(0, 200)}`);
+    return { error: "Pakka's phone line is busy right now. Please try again in a few minutes." };
+  }
   logEvent('web_callback', `${tenantName} asked for a call from the website`);
   return { status: 'calling', message: 'Pakka is calling you now.' };
 }
