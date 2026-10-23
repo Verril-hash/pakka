@@ -6,7 +6,7 @@ import { bolna } from '../lib/bolna.mjs';
 import { db, save, logEvent, findListing } from './store.mjs';
 import { requestRecheck, startTenantCall } from './checks.mjs';
 import { isFresh, normalizePhone } from './util.mjs';
-import { currentUser, findUser } from './auth.mjs';
+import { currentUser, findUser, isTeam } from './auth.mjs';
 
 const AGENTS = {
   check: { id: process.env.PAKKA_CHECK_AGENT_ID, name: 'Pakka Check', role: 'Calls owners to confirm listings' },
@@ -238,10 +238,13 @@ export async function requestCallback({ name, phone, language }) {
   if (!/^\+91[6-9]\d{9}$/.test(to ?? '')) return { error: 'Pakka can call Indian mobile numbers only.' };
   const now = Date.now();
   const mine = (recentCallbacks.get(to) ?? []).filter((t) => now - t < 24 * 60 * 60 * 1000);
-  if (mine.length && now - mine.at(-1) < PER_PHONE_MS) return { error: 'Pakka just called you. Please wait a few minutes.' };
-  if (mine.length >= PER_PHONE_PER_DAY) return { error: "That's today's calls. Pakka is still working on your search, and you can call again tomorrow." };
-  while (callbackLog.length && now - callbackLog[0] > 60 * 60 * 1000) callbackLog.shift();
-  if (callbackLog.length >= MAX_PER_HOUR) return { error: 'Pakka is busy right now. Please try again in a little while.' };
+  // The Pakka team tests calls all day: their numbers skip the limits (still only their own verified phone).
+  if (!isTeam(to)) {
+    if (mine.length && now - mine.at(-1) < PER_PHONE_MS) return { error: 'Pakka just called you. Please wait a few minutes.' };
+    if (mine.length >= PER_PHONE_PER_DAY) return { error: "That's today's calls. Pakka is still working on your search, and you can call again tomorrow." };
+    while (callbackLog.length && now - callbackLog[0] > 60 * 60 * 1000) callbackLog.shift();
+    if (callbackLog.length >= MAX_PER_HOUR) return { error: 'Pakka is busy right now. Please try again in a little while.' };
+  }
 
   recentCallbacks.set(to, [...mine, now]);
   callbackLog.push(now);
