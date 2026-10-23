@@ -92,10 +92,9 @@ export const TRANSCRIBER = {
   keywords: 'Pakka, BHK, rent, deposit, lakh, owner, broker, bachelors, family, Brookefield, Whitefield, Marathahalli, ITPL, Hoodi',
 };
 
-// Bulbul v4 Flash voices are built per language. Tamil has no female v4 voice, so it stays on v3 Priya.
+// Priya (Bulbul v3) in every language, by choice: one familiar Pakka voice. v3 voices speak all four languages.
 export const VOICES = {
-  en: { model: 'bulbul:v4-flash', voice: 'Simran (Conversation)', voice_id: 'simran_en_conversation' },
-  // Priya (v3) for Hindi and Kannada too, by choice: one familiar Pakka voice across languages.
+  en: { model: 'bulbul:v3', voice: 'Priya', voice_id: 'priya', speed: 1.1 },
   hi: { model: 'bulbul:v3', voice: 'Priya', voice_id: 'priya', speed: 1.1 },
   kn: { model: 'bulbul:v3', voice: 'Priya', voice_id: 'priya', speed: 1.1 },
   ta: { model: 'bulbul:v3', voice: 'Priya', voice_id: 'priya', speed: 1.1 },
