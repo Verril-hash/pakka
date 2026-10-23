@@ -11,7 +11,7 @@
  * Mid-call functions hit the Pakka server at PUBLIC_URL (see server/index.mjs).
  */
 
-import { TRANSCRIBER, VOICES } from './owner-check.mjs';
+import { CARRIER, CARRIER_AUDIO, TRANSCRIBER, VOICES } from './owner-check.mjs';
 
 const PUBLIC_URL = process.env.PUBLIC_URL;
 const TOOL_TOKEN = process.env.PAKKA_TOOL_TOKEN;
@@ -83,7 +83,7 @@ const languages = Object.fromEntries(
   Object.entries(LANGUAGE_RULES).map(([code, rule]) => [
     code,
     {
-      transcriber: { ...TENANT_TRANSCRIBER, language: code },
+      transcriber: { ...TENANT_TRANSCRIBER, language: code, ...CARRIER_AUDIO },
       synthesizer: { provider: 'sarvam', stream: true, buffer_size: 40, provider_config: { ...VOICES[code] } },
       system_prompt: languagePrompt(rule, code),
     },
@@ -201,7 +201,7 @@ export const agentConfig = {
             agent_flow_type: 'streaming',
           },
         },
-        transcriber: { ...TENANT_TRANSCRIBER, language: 'en', encoding: 'linear16', sampling_rate: 16000 },
+        transcriber: { ...TENANT_TRANSCRIBER, language: 'en', ...CARRIER_AUDIO },
         synthesizer: {
           provider: 'sarvam',
           stream: true,
@@ -209,9 +209,9 @@ export const agentConfig = {
           audio_format: 'wav',
           provider_config: { ...VOICES.en, language: 'en' },
         },
-        // Pakka's +91 Bengaluru number on Vobiz. (Twilio needs encoding mulaw/8000 instead.)
-        input: { provider: 'vobiz', format: 'wav' },
-        output: { provider: 'vobiz', format: 'wav' },
+        // Pakka's number: carrier set by PAKKA_CARRIER (see CARRIER in owner-check.mjs).
+        input: { provider: CARRIER, format: 'wav' },
+        output: { provider: CARRIER, format: 'wav' },
         api_tools: apiTools,
         multilingual_config: {
           enabled: true,

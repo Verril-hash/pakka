@@ -141,12 +141,15 @@ async function advanceCheck(session, check) {
   // Raw Bolna status ("ringing", "in-progress", …) so Mission Control can show the call live.
   check.liveStatus = exec.status;
 
-  if (FAILED.has(exec.status)) {
+  // On the Twilio number Bolna ends answered calls as "call-disconnected" rather than "completed":
+  // finished if there was a conversation, unreachable if there wasn't.
+  const ended = exec.status === 'completed' || (exec.status === 'call-disconnected' && /^user:/m.test(exec.transcript ?? ''));
+  if (FAILED.has(exec.status) || (exec.status === 'call-disconnected' && !ended)) {
     check.state = 'unreachable';
     logEvent('owner_unreachable', `${listing.ownerName} didn't pick up (${exec.status})`, { listingId: listing.id });
     return;
   }
-  if (exec.status !== 'completed') return;
+  if (!ended) return;
 
   const fields = exec.extracted_data?.['Listing Check'];
   check.completedAt ??= new Date().toISOString();
@@ -262,7 +265,7 @@ async function advanceSession(session) {
   if (session.state === 'calling_back') {
     const exec = await bolna('GET', `/executions/${session.callbackExecutionId}`);
     session.callbackLiveStatus = exec.status;
-    if (exec.status === 'completed' || FAILED.has(exec.status)) {
+    if (exec.status === 'completed' || exec.status === 'call-disconnected' || FAILED.has(exec.status)) {
       session.state = 'done';
       if (FAILED.has(exec.status)) logEvent('tenant_missed', `${session.tenantName} didn't pick up the callback`, { sessionId: session.id });
     }

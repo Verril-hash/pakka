@@ -75,6 +75,11 @@ Closing like: "சரி, [அவங்க சொன்ன நாள், time], 
 
 // Sarvam finalised one-word fragments ("अ।", "मैं।") as full turns, so the agent replied mid-thought
 // no matter how endpointing/linear delay were set. Soniox ends turns on meaning, not silence.
+// Pakka's phone carrier: 'vobiz' (+91 number) or 'twilio' (US number). Twilio streams 8 kHz mu-law audio;
+// with the wrong setting the transcriber hears noise and makes up words.
+export const CARRIER = process.env.PAKKA_CARRIER === 'twilio' ? 'twilio' : 'vobiz';
+export const CARRIER_AUDIO = CARRIER === 'twilio' ? { encoding: 'mulaw', sampling_rate: 8000 } : { encoding: 'linear16', sampling_rate: 16000 };
+
 export const TRANSCRIBER = {
   provider: 'soniox',
   model: 'stt-rt-v5',
@@ -110,7 +115,7 @@ const languages = Object.fromEntries(
   Object.entries(LANGUAGE_RULES).map(([code, rule]) => [
     code,
     {
-      transcriber: { ...TRANSCRIBER, language: code },
+      transcriber: { ...TRANSCRIBER, language: code, ...CARRIER_AUDIO },
       synthesizer: { provider: 'sarvam', stream: true, buffer_size: 40, provider_config: { ...VOICES[code] } },
       system_prompt: languagePrompt(rule, code),
     },
@@ -143,7 +148,7 @@ export const agentConfig = {
             agent_flow_type: 'streaming',
           },
         },
-        transcriber: { ...TRANSCRIBER, language: 'en', encoding: 'linear16', sampling_rate: 16000 },
+        transcriber: { ...TRANSCRIBER, language: 'en', ...CARRIER_AUDIO },
         synthesizer: {
           provider: 'sarvam',
           stream: true,
@@ -151,9 +156,9 @@ export const agentConfig = {
           audio_format: 'wav',
           provider_config: { ...VOICES.en, language: 'en' },
         },
-        // Pakka's +91 Bengaluru number on Vobiz. (Twilio needs encoding mulaw/8000 instead.)
-        input: { provider: 'vobiz', format: 'wav' },
-        output: { provider: 'vobiz', format: 'wav' },
+        // Pakka's number: carrier set by PAKKA_CARRIER (see CARRIER in owner-check.mjs).
+        input: { provider: CARRIER, format: 'wav' },
+        output: { provider: CARRIER, format: 'wav' },
         multilingual_config: {
           enabled: true,
           active_language: 'en',
