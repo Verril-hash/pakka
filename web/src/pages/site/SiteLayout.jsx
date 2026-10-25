@@ -88,7 +88,6 @@ export default function SiteLayout() {
               <ul className="space-y-1.5"><li><a href="/#how" className="hover:underline">How it works</a></li><li><Link to="/signin" className="hover:underline">Sign in</Link></li></ul>
             </div>
           </div>
-          <p className="border-t border-black/[.08] pt-4">Copyright © 2026 Pakka. Whitefield, Bengaluru. Voice by Bolna.</p>
         </div>
       </footer>
     </div>
