@@ -7,6 +7,7 @@ import { db, save, logEvent, findListing } from './store.mjs';
 import { requestRecheck, startTenantCall } from './checks.mjs';
 import { isFresh, normalizePhone } from './util.mjs';
 import { currentUser, findUser, isTeam } from './auth.mjs';
+import { notifyOwnerLive } from './whatsapp.mjs';
 
 const AGENTS = {
   check: { id: process.env.PAKKA_CHECK_AGENT_ID, name: 'Pakka Check', role: 'Calls owners to confirm listings' },
@@ -210,7 +211,10 @@ function addListing(body) {
     Object.assign(request, { status: 'listed', listingId: listing.id, closedAt: new Date().toISOString() });
     // A new owner's first flat: listing it is the team's verification of the owner too.
     const owner = request.kind === 'first' && findUser(request.uid);
-    if (owner) Object.assign(owner, { ownerStatus: 'approved', ownerDeclineReason: null });
+    if (owner) {
+      Object.assign(owner, { ownerStatus: 'approved', ownerDeclineReason: null });
+      notifyOwnerLive(listing);
+    }
   }
   logEvent('listing_added', `${listing.verifiedBy} verified ${listing.id}: ${listing.bhk} BHK in ${listing.area}`, { listingId: listing.id });
   return { listing };

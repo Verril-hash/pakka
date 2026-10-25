@@ -5,10 +5,11 @@ import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { extname } from 'node:path';
-import { handleApi } from './api.mjs';
+import { handleApi, requestCallback } from './api.mjs';
 import { handlePortal, PORTAL_PATHS } from './portal.mjs';
 import { currentUser } from './auth.mjs';
 import { appCheckOk, rateLimited } from './guard.mjs';
+import { notifyVisitBooked, sendText, webhookSignatureOk } from './whatsapp.mjs';
 import { db, save, logEvent, findListing, resetDb } from './store.mjs';
 import { searchListings } from './listings.mjs';
 import { requestOwnerCheck, tick } from './checks.mjs';
@@ -77,6 +78,7 @@ const tools = {
     };
     db.visits.push(visit);
     logEvent('visit_booked', `Visit booked: ${visit.tenantName} → ${listing.id} (${listing.area}) on ${slot}`, { listingId: listing.id });
+    notifyVisitBooked(listing, visit);
     return {
       status: 'booked',
       message: `Booked ${slot} at ${listing.ownerName}'s ${listing.bhk} BHK in ${listing.area}. Pakka will WhatsApp the exact address and let the owner know.`,
@@ -113,6 +115,29 @@ const server = createServer(async (req, res) => {
     tick();
     return send(res, 200, { ok: true });
   }
+  // WhatsApp messages people send to Pakka (via Vobiz). Signed with our webhook secret; anything unsigned is dropped.
+  // "CALL" gets a callback to the number that sent it, under the same limits as the website.
+  if (req.method === 'POST' && url.pathname === '/webhooks/whatsapp') {
+    const chunks = [];
+    for await (const c of req) chunks.push(c);
+    const raw = Buffer.concat(chunks);
+    if (!webhookSignatureOk(raw, req.headers['x-webhook-signature'])) return send(res, 401, { error: 'bad signature' });
+    send(res, 200, { ok: true });
+    let evt;
+    try { evt = JSON.parse(raw.toString('utf8')); } catch { return; }
+    const d = evt.data ?? evt;
+    if (!String(evt.event ?? evt.type ?? '').includes('inbound')) return;
+    const from = normalizePhone(d.from ?? d.contact?.phone_number ?? d.contact?.phone ?? d.sender);
+    const text = String(d.text?.body ?? d.content?.text?.body ?? d.content?.body ?? d.body ?? '').trim();
+    logEvent('whatsapp_inbound', `WhatsApp from …${String(from).slice(-4)}: "${text.slice(0, 80)}"`);
+    if (from && /\bcall\b/i.test(text)) {
+      const profile = db.users.find((u) => u.phone === from)?.profiles?.tenant;
+      const out = await requestCallback({ phone: from, name: profile?.fullName?.split(' ')[0], language: profile?.language });
+      sendText(from, out.error ?? 'Calling you now 📞');
+    }
+    return;
+  }
+
   // Browser API front door: per-IP rate limits, then App Check (only our real website gets in).
   if (url.pathname.startsWith('/api/')) {
     const wait = rateLimited(req, url.pathname);

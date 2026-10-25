@@ -11,6 +11,7 @@ import { greeting as tenantGreeting } from '../agents/pakka-line.mjs';
 import { db, save, logEvent, findListing } from './store.mjs';
 import { normalizePhone, parseAmount, rupees } from './util.mjs';
 import { lastSearch } from './listings.mjs';
+import { notifyFlatsAfterCall, notifyMissedCall } from './whatsapp.mjs';
 
 const CHECK_AGENT = process.env.PAKKA_CHECK_AGENT_ID;
 const LINE_AGENT = process.env.PAKKA_LINE_AGENT_ID;
@@ -267,7 +268,13 @@ async function advanceSession(session) {
     session.callbackLiveStatus = exec.status;
     if (exec.status === 'completed' || exec.status === 'call-disconnected' || FAILED.has(exec.status)) {
       session.state = 'done';
-      if (FAILED.has(exec.status)) logEvent('tenant_missed', `${session.tenantName} didn't pick up the callback`, { sessionId: session.id });
+      const talked = /^user:/m.test(exec.transcript ?? '');
+      if (talked) {
+        notifyFlatsAfterCall(session, session.checks.map((c) => findListing(c.listingId)));
+      } else {
+        logEvent('tenant_missed', `${session.tenantName} didn't pick up the callback`, { sessionId: session.id });
+        notifyMissedCall(session);
+      }
     }
   }
 }

@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { currentUser, endSession, findUser, ownerStatus, profileComplete, saveProfile, sessionCookie, signInWithFirebase } from './auth.mjs';
 import { db, findListing, logEvent, save } from './store.mjs';
 import { isFresh, normalizePhone, rupees } from './util.mjs';
+import { notifyVisitBooked } from './whatsapp.mjs';
 
 const clean = (v, max = 80) => String(v ?? '').trim().slice(0, max);
 
@@ -369,6 +370,7 @@ export async function handlePortal(req, res, url, { send, readJson }) {
       const visit = { id: randomUUID().slice(0, 8), listingId: l.id, slot: body.slot, tenantName: name, tenantPhone: user.phone, bookedAt: new Date().toISOString(), source: 'web' };
       db.visits.push(visit);
       logEvent('visit_booked', `Visit booked on the website: ${name} → ${l.id} (${l.area}) on ${body.slot}`, { listingId: l.id });
+      notifyVisitBooked(l, visit);
       save();
       return send(res, 200, { ok: true, visit: { slot: visit.slot } });
     }

@@ -14,7 +14,9 @@
     "web:dev": "npm --prefix web run dev",
     "web:build": "npm --prefix web run build",
     "inbound:link": "node --env-file=.env scripts/link-inbound.mjs",
-    "deploy": "gcloud run deploy pakka --source . --region asia-south1 --project pakka-552af --account verrilvaz404@gmail.com --quiet"
+    "deploy": "gcloud run deploy pakka --source . --region asia-south1 --project pakka-552af --account verrilvaz404@gmail.com --quiet",
+    "wa:verify": "node --env-file=.env scripts/whatsapp-verify.mjs",
+    "wa:setup": "node --env-file=.env scripts/whatsapp-setup.mjs"
   },
   "engines": {
     "node": ">=22"
