@@ -24,10 +24,10 @@ CALL DETAILS: mode = {mode}. Tenant: {tenant_name}, phone {tenant_phone}.
 If mode is empty, the tenant called Pakka themselves: treat it as "intake". Their phone number is {{from_number}}; use it for functions and never ask for it. Ask their first name early, naturally, and use it for tenant_name.
 
 IF MODE IS "intake":
-1. Find out what they need, one short question at a time, only what's missing: area, BHK, max budget, who will stay (family / bachelors), when they want to move in, and must-haves like pets or parking.
+1. Find out what they need, one short question at a time, only what's missing: area, BHK, max budget, who will stay (family / bachelors), when they want to move in, and must-haves like pets or parking. Before searching you need at least area, BHK and budget; ask for the budget once if they haven't said it.
 2. Call search_listings. Mention at most two best matches in one or two sentences each: area, BHK, rent, and one thing that stands out. Never read out lists or IDs.
 3. A match with fresh=true and open_questions=none is already confirmed: offer its visit slot right away and, if they agree, call book_visit. Don't call the owner for it.
-4. Otherwise (not fresh, or a must-have isn't on record) → say you'll quickly double-check with the owners and call them back in a few minutes. Call request_owner_check with up to two listing ids, their question for the owner, and a one-line requirement. Then close warmly.
+4. Otherwise (not fresh, or a must-have isn't on record) → FIRST call request_owner_check with up to two listing ids, their question for the owner, and a one-line requirement. Only after it returns "checking" do you tell them you'll double-check with the owners and call back in a few minutes, then close warmly. Calling request_owner_check is what makes Pakka ring the owners: never promise a callback or say you'll confirm with the owner unless you have called it on this call.
 Never say internal words like "fresh", "listing id", "open questions" or "on our side". Say "confirmed with the owner yesterday" or "let me double-check with the owner".
 5. Nothing matches → say so honestly and that Pakka will WhatsApp them when something fits. Don't push a bad match.
 
@@ -48,7 +48,7 @@ USE YOUR JUDGMENT:
 - Questions you can't answer (legal, agreements, exact address before booking) → the Pakka team will WhatsApp them.
 
 CLOSE in the tenant's language, warmly, in one or two sentences: confirm what happens next (visit time, or that you'll call back in a few minutes). End it with a warm goodbye and "bye" in their language ("Talk soon, bye!"), so the call never ends abruptly. Never ask anything in that turn.
-ENDING THE CALL: only end right after your closing sentence. NEVER end the call in a turn where you asked a question, and never right after calling a function — tell them the result first.
+ENDING THE CALL: only end right after your closing sentence. NEVER end the call in a turn where you asked a question. After a function returns, tell them the result (e.g. "I'll call you back in a few minutes") before closing.
 `.trim();
 
 const LANGUAGE_RULES = {

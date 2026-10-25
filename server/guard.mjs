@@ -7,8 +7,13 @@ import { app } from './firebase.mjs';
 // off | monitor (log what would be blocked) | enforce
 const MODE = process.env.APPCHECK ?? 'monitor';
 
-/** Public listings and "who am I" stay open so the public site works without Firebase. */
-export const needsAppCheck = (path) => path.startsWith('/api/') && !path.startsWith('/api/public/') && path !== '/api/me';
+/**
+ * Public listings and "who am I" stay open so the public site works without Firebase. Call recordings are
+ * fetched by the browser's audio player, which can't add headers; they still need a signed-in session and
+ * only ever return the person's own calls (team: any call).
+ */
+export const needsAppCheck = (path) =>
+  path.startsWith('/api/') && !path.startsWith('/api/public/') && path !== '/api/me' && !path.endsWith('/recording');
 
 /** True if the request may continue. In monitor mode failures are only logged. */
 export async function appCheckOk(req, path) {
