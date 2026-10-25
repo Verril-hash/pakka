@@ -26,7 +26,7 @@ async function showTemplates() {
 }
 
 if (step === 'channel') {
-  const rows = list(await vobizWa('GET', '/channels'));
+  const rows = list(await vobizWa('GET', '/channels/whatsapp'));
   const ch = rows.find((c) => String(c.phone_number ?? '').replace(/\D/g, '').endsWith('6624837159')) ?? rows[0];
   if (!ch) throw new Error('No WhatsApp channel found on this Vobiz account.');
   console.log(`Channel: ${ch.display_name ?? ch.name} · ${ch.phone_number} · ${ch.status} · id ${ch.id} · waba ${ch.waba_id}`);
