@@ -1,5 +1,9 @@
 # Pakka
 
+> **🌐 Live site: [pakka-alpha.vercel.app](https://pakka-alpha.vercel.app)**
+>
+> **🎬 Demo video: [Watch on Google Drive](https://drive.google.com/file/d/1aivjxC8qQ8vMaA5538i5Q3FdH_blYgxT/view?usp=sharing)**
+
 **Rent straight from the owner in Bengaluru. Zero brokerage, and faster.**
 
 Pakka's team verifies every owner and flat in person. Voice agents built on [Bolna](https://bolna.ai) do the rest: they talk to tenants, call owners to confirm the flat and get the real details, call the tenant back, and book the visit, in English, Hindi, Kannada or Tamil. Free for tenants; owners list for free and pay only when Pakka finds their tenant.
