@@ -20,6 +20,8 @@ async function setEnv(key, value) {
 }
 
 async function showTemplates() {
+  // Vobiz only learns Meta's decision when asked: sync first so the status is current.
+  await vobizWa('POST', `/channels/${process.env.VOBIZ_WA_CHANNEL_ID}/templates/sync`).catch(() => {});
   const rows = list(await vobizWa('GET', `/channels/${process.env.VOBIZ_WA_CHANNEL_ID}/templates`));
   for (const t of rows) console.log(`${(t.name ?? '').padEnd(22)} ${t.status ?? t.approval_status ?? '?'}${t.rejected_reason ? ` (${t.rejected_reason})` : ''}`);
   if (!rows.length) console.log('(no templates yet)');
