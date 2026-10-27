@@ -126,6 +126,14 @@ const server = createServer(async (req, res) => {
     let evt;
     try { evt = JSON.parse(raw.toString('utf8')); } catch { return; }
     const d = evt.data ?? evt;
+    // Delivery updates: Meta can reject a message after Vobiz accepted it (e.g. billing not set up). Surface why.
+    if (String(evt.event ?? evt.type ?? '').includes('status')) {
+      if (d.status === 'failed') {
+        const why = d.meta_error_description ?? d.error?.message ?? d.errors?.[0]?.message ?? JSON.stringify(d.error ?? d.errors ?? '').slice(0, 200);
+        logEvent('whatsapp_failed', `WhatsApp delivery failed (${d.meta_error_code ?? d.error?.code ?? '?'}): ${String(why).slice(0, 250)}`);
+      }
+      return;
+    }
     if (!String(evt.event ?? evt.type ?? '').includes('inbound')) return;
     const from = normalizePhone(d.from ?? d.contact?.phone_number ?? d.contact?.phone ?? d.sender);
     const text = String(d.text?.body ?? d.content?.text?.body ?? d.content?.body ?? d.body ?? '').trim();
